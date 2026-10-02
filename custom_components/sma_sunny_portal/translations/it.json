@@ -1,0 +1,39 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Autenticazione manuale",
+        "description": "Questa configurazione sperimentale richiede per ora credenziali copiate localmente da una sessione browser autenticata in Sunny Portal. Il refresh token viene memorizzato privatamente e non sarà più mostrato.",
+        "data": {
+          "plant_id": "ID impianto",
+          "refresh_token": "Refresh token"
+        },
+        "data_description": {
+          "plant_id": "Identificatore numerico visibile negli URL delle richieste API di Sunny Portal.",
+          "refresh_token": "Refresh token rotante più recente della sessione browser autenticata. Non condividere mai questo valore."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Ripeti autenticazione",
+        "description": "Sunny Portal ha rifiutato la sessione memorizzata. Inserisci un nuovo refresh token copiato localmente da una nuova sessione browser autenticata.",
+        "data": {
+          "refresh_token": "Nuovo refresh token"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossibile connettersi a SMA Sunny Portal.",
+      "invalid_auth": "Sunny Portal ha rifiutato il refresh token.",
+      "invalid_plant_id": "Inserisci l'ID numerico dell'impianto presente nell'URL della richiesta API di Sunny Portal.",
+      "invalid_refresh_token": "Inserisci un refresh token non vuoto e senza spazi.",
+      "invalid_response": "Sunny Portal ha restituito dati in un formato non supportato.",
+      "rate_limited": "Sunny Portal ha limitato temporaneamente la richiesta. Riprova più tardi.",
+      "storage_error": "Non è stato possibile salvare in sicurezza il refresh token ruotato.",
+      "unknown": "Errore imprevisto durante la convalida di Sunny Portal."
+    },
+    "abort": {
+      "already_configured": "Questo account SMA è già configurato.",
+      "wrong_account": "Il nuovo token appartiene a un account SMA differente."
+    }
+  }
+}

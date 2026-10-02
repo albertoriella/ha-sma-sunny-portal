@@ -2,6 +2,7 @@
   "domain": "sma_sunny_portal",
   "name": "SMA Sunny Portal Forecast",
   "codeowners": ["@albertoriella"],
+  "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/albertoriella/ha-sma-sunny-portal",
   "integration_type": "service",

@@ -46,6 +46,13 @@ accepted it. The short-lived access token exists only in memory.
 The integration must not run concurrently with an external program rotating
 the same refresh-token chain.
 
+Until SMA authorizes a dedicated OAuth client and redirect URI, the config flow
+provides an explicitly experimental manual bootstrap. It validates both token
+rotation and plant access before creating an entry, derives the stable unique
+ID from the validated SMA account subject, and preserves the newest token when
+a validation attempt must be retried. The reauthentication flow writes every
+rotation directly to the private token store before reloading the entry.
+
 ## Home Assistant model
 
 A `DataUpdateCoordinator` performs one cloud update approximately every 15

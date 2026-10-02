@@ -22,9 +22,14 @@ forecasts from SMA Sunny Portal powered by ennexOS.
 The authentication and forecast endpoints have been validated in a private
 multi-day endurance test. Synthetic protocol fixtures, normalized immutable
 models, an asynchronous HTTP client, serialized refresh-token rotation, private
-atomic token storage, and the Home Assistant coordinator runtime are covered by
-network-free tests. The next milestone is a temporary manual-bootstrap config
-flow followed by the first forecast sensors.
+atomic token storage, the Home Assistant coordinator runtime, and a temporary
+manual-bootstrap and reauthentication flow are covered by network-free tests.
+The next milestone is the first set of forecast sensors.
+
+The temporary setup form accepts the numeric plant ID and the newest rotating
+refresh token obtained locally from an authenticated browser session. A future
+SMA-authorized OAuth client can replace this bootstrap UI without changing the
+normalized data models or entities.
 
 See [the architecture notes](docs/architecture.md) for the planned design and
 security boundaries.
