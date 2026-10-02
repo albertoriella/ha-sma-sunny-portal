@@ -23,3 +23,7 @@ class SmaSunnyPortalRateLimitError(SmaSunnyPortalResponseError):
 
 class SmaSunnyPortalDataError(SmaSunnyPortalError):
     """Raised when a Sunny Portal payload violates the observed contract."""
+
+
+class SmaSunnyPortalTokenPersistenceError(SmaSunnyPortalError):
+    """Raised when a rotated refresh token cannot be persisted safely."""

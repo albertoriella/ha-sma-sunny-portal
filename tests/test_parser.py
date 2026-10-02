@@ -76,6 +76,7 @@ def test_parser_rejects_non_utc_timestamp_without_echoing_value() -> None:
 
     assert "predictionValues[0].timeUtc" in str(raised.value)
     assert private_value not in str(raised.value)
+    assert raised.value.__cause__ is None
 
 
 def test_parser_rejects_non_finite_number() -> None:

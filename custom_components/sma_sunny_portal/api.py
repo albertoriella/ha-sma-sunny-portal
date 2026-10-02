@@ -86,10 +86,10 @@ class SmaSunnyPortalApiClient:
                     aiohttp.ContentTypeError,
                     json.JSONDecodeError,
                     UnicodeError,
-                ) as err:
+                ):
                     raise SmaSunnyPortalDataError(
                         "Sunny Portal returned a non-JSON response"
-                    ) from err
+                    ) from None
         except (TimeoutError, aiohttp.ClientError) as err:
             raise SmaSunnyPortalConnectionError("Could not reach Sunny Portal") from err
 

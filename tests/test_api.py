@@ -148,5 +148,7 @@ def test_client_rejects_non_json_response() -> None:
     session = FakeSession(FakeResponse(200, invalid_json))
     client = SmaSunnyPortalApiClient(session, _access_token)  # type: ignore[arg-type]
 
-    with pytest.raises(SmaSunnyPortalDataError, match="non-JSON"):
+    with pytest.raises(SmaSunnyPortalDataError, match="non-JSON") as raised:
         asyncio.run(client.async_get_consumer_balance("90000000", date(2099, 6, 15)))
+
+    assert raised.value.__cause__ is None

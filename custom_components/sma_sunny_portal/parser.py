@@ -86,10 +86,10 @@ def _utc_datetime(mapping: Mapping[str, Any], key: str, path: str) -> datetime:
     raw_value = _string(mapping, key, path)
     try:
         parsed = datetime.fromisoformat(raw_value.replace("Z", "+00:00"))
-    except ValueError as err:
+    except ValueError:
         raise SmaSunnyPortalDataError(
             f"{path}.{key} must be an ISO 8601 timestamp"
-        ) from err
+        ) from None
 
     if parsed.utcoffset() != timedelta(0):
         raise SmaSunnyPortalDataError(f"{path}.{key} must use UTC")
