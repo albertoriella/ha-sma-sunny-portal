@@ -38,13 +38,20 @@ The token manager must:
 6. never include either token in logs or diagnostics;
 7. convert terminal authentication failures into a Home Assistant reauth flow.
 
+The long-lived refresh token is stored in a private, config-entry-scoped Home
+Assistant `Store` using immediate atomic writes. A bootstrap token may briefly
+arrive through config-entry data, but is removed after the private store has
+accepted it. The short-lived access token exists only in memory.
+
 The integration must not run concurrently with an external program rotating
 the same refresh-token chain.
 
 ## Home Assistant model
 
-A `DataUpdateCoordinator` will perform one cloud update approximately every
-15 minutes. Entities will read normalized immutable data from the coordinator.
+A `DataUpdateCoordinator` performs one cloud update approximately every 15
+minutes, requests the current date in Home Assistant's configured time zone,
+and translates expired authentication into config-entry reauthentication.
+Entities will read normalized immutable data from the coordinator.
 
 Planned entities include:
 
