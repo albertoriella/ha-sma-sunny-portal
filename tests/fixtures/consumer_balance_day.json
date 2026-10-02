@@ -1,0 +1,161 @@
+{
+  "values": [
+    {
+      "timeUtc": "2099-06-15T07:00:00Z",
+      "totalGeneration": 500,
+      "pvGeneration": 500,
+      "otherGeneration": null,
+      "externalConsumption": 700,
+      "totalConsumption": 700,
+      "batteryCharging": 0,
+      "batteryDischarging": 0,
+      "baseload": 700,
+      "consumers": [
+        {
+          "componentId": "90000001",
+          "consumption": 0
+        }
+      ]
+    },
+    {
+      "timeUtc": "2099-06-15T07:05:00Z",
+      "totalGeneration": 650,
+      "pvGeneration": 650,
+      "otherGeneration": null,
+      "externalConsumption": 600,
+      "totalConsumption": 720,
+      "batteryCharging": 0,
+      "batteryDischarging": 0,
+      "baseload": 600,
+      "consumers": [
+        {
+          "componentId": "90000001",
+          "consumption": 120
+        }
+      ]
+    },
+    {
+      "timeUtc": "2099-06-15T07:10:00Z",
+      "totalGeneration": 800,
+      "pvGeneration": 800,
+      "otherGeneration": null,
+      "externalConsumption": 600,
+      "totalConsumption": 750,
+      "batteryCharging": 0,
+      "batteryDischarging": 0,
+      "baseload": 600,
+      "consumers": [
+        {
+          "componentId": "90000001",
+          "consumption": 150
+        }
+      ]
+    },
+    {
+      "timeUtc": "2099-06-15T07:15:00Z",
+      "totalGeneration": 950,
+      "pvGeneration": 950,
+      "otherGeneration": null,
+      "externalConsumption": 600,
+      "totalConsumption": 780,
+      "batteryCharging": 0,
+      "batteryDischarging": 0,
+      "baseload": 600,
+      "consumers": [
+        {
+          "componentId": "90000001",
+          "consumption": 180
+        }
+      ]
+    }
+  ],
+  "consumerLegend": [
+    {
+      "componentId": "90000001",
+      "name": "Synthetic EV Charger"
+    }
+  ],
+  "predictionValues": [
+    {
+      "timeUtc": "2099-06-15T07:30:00Z",
+      "pvGeneration": 1100,
+      "totalConsumption": 800
+    },
+    {
+      "timeUtc": "2099-06-15T07:45:00Z",
+      "pvGeneration": 1300,
+      "totalConsumption": 820
+    },
+    {
+      "timeUtc": "2099-06-15T08:00:00Z",
+      "pvGeneration": 1500,
+      "totalConsumption": 850
+    },
+    {
+      "timeUtc": "2099-06-15T08:15:00Z",
+      "pvGeneration": 1700,
+      "totalConsumption": 880
+    },
+    {
+      "timeUtc": "2099-06-15T08:30:00Z",
+      "pvGeneration": 1900,
+      "totalConsumption": 900
+    }
+  ],
+  "weatherForecast": [
+    {
+      "timeUtc": "2099-06-15T08:00:00Z",
+      "iconId": 1
+    },
+    {
+      "timeUtc": "2099-06-15T09:00:00Z",
+      "iconId": 2
+    }
+  ],
+  "recommendations": [
+    {
+      "timeUtcStart": "2099-06-15T07:00:00Z",
+      "timeUtcEnd": "2099-06-15T08:00:00Z",
+      "totalPvGeneration": 900,
+      "totalConsumption": 780,
+      "difference": 120,
+      "excessEnergy": "Low"
+    },
+    {
+      "timeUtcStart": "2099-06-15T08:00:00Z",
+      "timeUtcEnd": "2099-06-15T09:00:00Z",
+      "totalPvGeneration": 1600,
+      "totalConsumption": 850,
+      "difference": 750,
+      "excessEnergy": "Mid"
+    }
+  ],
+  "total": {
+    "batteryCharging": 0,
+    "batteryDischarging": 0,
+    "consumers": [
+      {
+        "componentId": "90000001",
+        "totalConsumption": 450,
+        "hasControlOptions": true,
+        "hasDeviceProperties": true,
+        "sources": {
+          "pvPercentage": null,
+          "batteryPercentage": null,
+          "gridPercentage": null,
+          "hydroPercentage": null,
+          "fuelPercentage": null,
+          "chpPercentage": null
+        },
+        "image": {
+          "imageTagId": 0
+        },
+        "timeFrames": null
+      }
+    ]
+  },
+  "_links": {
+    "ui_View_DeviceProperties": [],
+    "ui_View_EnergyManagement_BatteryConfig": []
+  }
+}
