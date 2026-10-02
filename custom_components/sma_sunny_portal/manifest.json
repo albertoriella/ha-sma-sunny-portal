@@ -1,0 +1,12 @@
+{
+  "domain": "sma_sunny_portal",
+  "name": "SMA Sunny Portal Forecast",
+  "codeowners": ["@albertoriella"],
+  "dependencies": [],
+  "documentation": "https://github.com/albertoriella/ha-sma-sunny-portal",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/albertoriella/ha-sma-sunny-portal/issues",
+  "requirements": [],
+  "version": "0.0.0"
+}

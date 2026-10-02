@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Sun and energy forecast chart">
+  <rect width="512" height="512" rx="112" fill="#0b2948"/>
+  <g fill="none" stroke="#f9c74f" stroke-linecap="round">
+    <circle cx="356" cy="158" r="61" fill="#f9c74f" stroke="none"/>
+    <path d="M356 61v35M356 220v35M259 158h35M418 158h35M287 89l25 25M400 202l25 25M425 89l-25 25M312 202l-25 25" stroke-width="19"/>
+  </g>
+  <path d="M69 410h374" fill="none" stroke="#7291aa" stroke-linecap="round" stroke-width="15"/>
+  <path d="M83 378c50-19 79-105 132-104 47 1 63 63 104 58 43-5 56-80 111-104" fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="27"/>
+  <path d="M83 378c50-19 79-105 132-104 47 1 63 63 104 58 43-5 56-80 111-104" fill="none" stroke="#36b9e8" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/>
+  <g fill="#36b9e8" stroke="#ffffff" stroke-width="8">
+    <circle cx="83" cy="378" r="13"/>
+    <circle cx="215" cy="274" r="13"/>
+    <circle cx="319" cy="332" r="13"/>
+    <circle cx="430" cy="228" r="13"/>
+  </g>
+</svg>

@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Tests and tooling
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+
+# Local Home Assistant development
+config/
+
+# Secrets and runtime state
+.env
+.env.*
+!.env.example
+*.har
+*.jwt
+*.token
+refresh_token
+refresh_token.*
+token.json
+state/
+snapshots/
+
+# Private test captures and archives
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+sma-api-test-results-*
+sma_api_long_test.py

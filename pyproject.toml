@@ -1,0 +1,25 @@
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+  "ASYNC",
+  "B",
+  "C4",
+  "E",
+  "F",
+  "I",
+  "LOG",
+  "PIE",
+  "PT",
+  "RET",
+  "RSE",
+  "SIM",
+  "T20",
+  "UP",
+]
