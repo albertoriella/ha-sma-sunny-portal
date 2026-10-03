@@ -181,9 +181,7 @@ def test_coordinator_merges_days_and_prefers_next_payload_on_overlap(
 
     current_balance = ConsumerBalance(
         measurements=(),
-        predictions=(
-            Prediction(overlap_time, 100, 700),
-        ),
+        predictions=(Prediction(overlap_time, 100, 700),),
         weather_forecasts=(),
         recommendations=(
             Recommendation(overlap_time, overlap_end, 100, 700, -600, "Low"),

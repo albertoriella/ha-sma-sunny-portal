@@ -38,14 +38,10 @@ def _merge_consumer_balances(
 ) -> ConsumerBalance:
     """Merge date-scoped payloads and prefer later payloads on overlap."""
     measurements = {
-        item.time_utc: item
-        for balance in balances
-        for item in balance.measurements
+        item.time_utc: item for balance in balances for item in balance.measurements
     }
     predictions = {
-        item.time_utc: item
-        for balance in balances
-        for item in balance.predictions
+        item.time_utc: item for balance in balances for item in balance.predictions
     }
     weather_forecasts = {
         item.time_utc: item
@@ -58,18 +54,14 @@ def _merge_consumer_balances(
         for item in balance.recommendations
     }
     consumers = {
-        item.component_id: item
-        for balance in balances
-        for item in balance.consumers
+        item.component_id: item for balance in balances for item in balance.consumers
     }
 
     return ConsumerBalance(
         measurements=tuple(
             sorted(measurements.values(), key=lambda item: item.time_utc)
         ),
-        predictions=tuple(
-            sorted(predictions.values(), key=lambda item: item.time_utc)
-        ),
+        predictions=tuple(sorted(predictions.values(), key=lambda item: item.time_utc)),
         weather_forecasts=tuple(
             sorted(weather_forecasts.values(), key=lambda item: item.time_utc)
         ),
@@ -79,9 +71,7 @@ def _merge_consumer_balances(
                 key=lambda item: item.time_utc_start,
             )
         ),
-        consumers=tuple(
-            sorted(consumers.values(), key=lambda item: item.component_id)
-        ),
+        consumers=tuple(sorted(consumers.values(), key=lambda item: item.component_id)),
     )
 
 

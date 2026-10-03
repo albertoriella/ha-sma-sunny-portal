@@ -22,12 +22,8 @@ async def async_get_solar_forecast(
 
     return {
         "wh_hours": {
-            recommendation.time_utc_start.isoformat(): (
-                recommendation.pv_generation_wh
-            )
-            for recommendation in (
-                entry.runtime_data.coordinator.data.recommendations
-            )
+            recommendation.time_utc_start.isoformat(): (recommendation.pv_generation_wh)
+            for recommendation in (entry.runtime_data.coordinator.data.recommendations)
             if recommendation.pv_generation_wh != 0
             or (
                 recommendation.time_utc_start.hour,

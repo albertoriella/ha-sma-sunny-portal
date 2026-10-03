@@ -86,12 +86,8 @@ def _counts(path: Path) -> tuple[int, int, int]:
     """Return snapshot, forecast-point, and measurement row counts."""
     with sqlite3.connect(path) as connection:
         return (
-            connection.execute(
-                "SELECT COUNT(*) FROM forecast_snapshots"
-            ).fetchone()[0],
-            connection.execute(
-                "SELECT COUNT(*) FROM forecast_points"
-            ).fetchone()[0],
+            connection.execute("SELECT COUNT(*) FROM forecast_snapshots").fetchone()[0],
+            connection.execute("SELECT COUNT(*) FROM forecast_points").fetchone()[0],
             connection.execute("SELECT COUNT(*) FROM measurements").fetchone()[0],
         )
 
@@ -188,11 +184,7 @@ def test_archive_redacts_storage_failures(
     )
 
     with pytest.raises(SmaSunnyPortalHistoryError) as raised:
-        asyncio.run(
-            store.async_record(
-                _balance(datetime(2099, 6, 15, 8, tzinfo=UTC))
-            )
-        )
+        asyncio.run(store.async_record(_balance(datetime(2099, 6, 15, 8, tzinfo=UTC))))
 
     assert "secret filesystem detail" not in str(raised.value)
     assert raised.value.__cause__ is None

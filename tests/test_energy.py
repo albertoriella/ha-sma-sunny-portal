@@ -142,9 +142,7 @@ def test_energy_forecast_keeps_daytime_zero_and_skips_midnight_zero(
         excess_energy="Low",
     )
     entry = SimpleNamespace(
-        runtime_data=FakeRuntimeData(
-            _balance(midnight, _recommendation(7, 0))
-        )
+        runtime_data=FakeRuntimeData(_balance(midnight, _recommendation(7, 0)))
     )
 
     result = asyncio.run(

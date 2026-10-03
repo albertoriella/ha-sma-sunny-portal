@@ -73,7 +73,7 @@ class SmaSunnyPortalHistoryStore:
                 balance,
                 issued_at,
             )
-        except (OSError, sqlite3.Error, ValueError):
+        except OSError, sqlite3.Error, ValueError:
             raise SmaSunnyPortalHistoryError(
                 "Could not update the private SMA forecast history"
             ) from None
@@ -261,9 +261,7 @@ class SmaSunnyPortalHistoryStore:
                 ON measurements (valid_at_utc);
             """
         )
-        connection.execute(
-            f"PRAGMA user_version = {HISTORY_DATABASE_SCHEMA_VERSION}"
-        )
+        connection.execute(f"PRAGMA user_version = {HISTORY_DATABASE_SCHEMA_VERSION}")
 
     def _remove(self) -> None:
         """Delete the database and any SQLite sidecar left after an interruption."""
