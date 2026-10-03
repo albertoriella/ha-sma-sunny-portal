@@ -56,8 +56,9 @@ rotation directly to the private token store before reloading the entry.
 ## Home Assistant model
 
 A `DataUpdateCoordinator` performs one cloud update approximately every 15
-minutes, requests the current date in Home Assistant's configured time zone,
-and translates expired authentication into config-entry reauthentication.
+minutes, requests the current and following dates in Home Assistant's configured
+time zone, merges overlapping samples by timestamp, and translates expired
+authentication into config-entry reauthentication.
 Entities read normalized immutable data from the coordinator. The initial
 sensor platform selects the first forecast timestamp at or after the current
 UTC time and exposes four entities:
@@ -79,11 +80,34 @@ Planned entities include:
 - best forecast energy window;
 - diagnostic timestamps and data freshness.
 
-The photovoltaic forecast may also be exposed through the Home Assistant
-Energy dashboard by converting quarter-hour power samples into hourly energy.
-Large forecast arrays remain in coordinator memory instead of being repeated
-in Recorder-backed state attributes. A future response-producing action can
-return the cached series on demand for dashboards and automations.
+The photovoltaic forecast is exposed through Home Assistant's native Energy
+dashboard provider interface. It uses SMA's hourly `totalPvGeneration`
+recommendation values directly, avoiding conversion and rounding drift from
+the quarter-hour power curve. Large forecast arrays remain in coordinator
+memory instead of being repeated in Recorder-backed state attributes. A future
+response-producing action can return the cached series on demand for dashboards
+and automations.
+
+## Forecast provenance and evaluation
+
+Long-term evaluation must preserve both when a forecast was issued and the
+future interval it predicted. It must not be implemented by copying full curves
+into sensor attributes, because Recorder would duplicate the entire payload on
+every state update.
+
+An optional bounded archive may instead store normalized forecast vintages in
+a private database with at least these dimensions:
+
+- provider and plant;
+- forecast issue time;
+- forecast target interval;
+- predicted photovoltaic and consumption energy;
+- later observed energy and evaluation horizon.
+
+Raw vintages should have configurable retention. Compact aggregate metrics such
+as bias, MAE, and RMSE can be retained longer and exposed as diagnostics or
+Home Assistant statistics. This provider-neutral boundary also permits a future
+ensemble forecaster without coupling its learning logic to the SMA transport.
 
 ## Tests and fixtures
 

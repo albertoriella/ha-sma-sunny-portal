@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import importlib
 import sys
-from datetime import date
+from datetime import UTC, date, datetime
 from types import ModuleType, SimpleNamespace
 
 import pytest
@@ -14,7 +14,11 @@ from custom_components.sma_sunny_portal.errors import (
     SmaSunnyPortalAuthenticationError,
     SmaSunnyPortalConnectionError,
 )
-from custom_components.sma_sunny_portal.models import ConsumerBalance
+from custom_components.sma_sunny_portal.models import (
+    ConsumerBalance,
+    Prediction,
+    Recommendation,
+)
 
 MODULE_NAME = "custom_components.sma_sunny_portal.coordinator"
 
@@ -93,10 +97,12 @@ class FakeApiClient:
     def __init__(
         self,
         result: ConsumerBalance | None = None,
+        results_by_date: dict[date, ConsumerBalance] | None = None,
         error: Exception | None = None,
     ) -> None:
         """Initialize the fake client."""
         self.result = result
+        self.results_by_date = results_by_date
         self.error = error
         self.calls: list[tuple[str, date]] = []
 
@@ -109,6 +115,8 @@ class FakeApiClient:
         self.calls.append((plant_id, date_local))
         if self.error is not None:
             raise self.error
+        if self.results_by_date is not None:
+            return self.results_by_date[date_local]
         assert self.result is not None
         return self.result
 
@@ -118,10 +126,10 @@ def _empty_balance() -> ConsumerBalance:
     return ConsumerBalance((), (), (), (), ())
 
 
-def test_coordinator_fetches_one_local_day(
+def test_coordinator_fetches_current_and_next_local_days(
     coordinator_environment: SimpleNamespace,
 ) -> None:
-    """The coordinator polls once with the configured plant and local date."""
+    """Each update covers today and tomorrow with one stable local-date read."""
     api_client = FakeApiClient(result=_empty_balance())
     local_date = date(2099, 6, 15)
     config_entry = object()
@@ -136,10 +144,75 @@ def test_coordinator_fetches_one_local_day(
     result = asyncio.run(coordinator._async_update_data())
 
     assert result == _empty_balance()
-    assert api_client.calls == [("90000000", local_date)]
+    assert api_client.calls == [
+        ("90000000", local_date),
+        ("90000000", date(2099, 6, 16)),
+    ]
     assert coordinator.config_entry is config_entry
     assert coordinator.update_interval.total_seconds() == 900
     assert coordinator.always_update is False
+
+
+def test_coordinator_merges_days_and_prefers_next_payload_on_overlap(
+    coordinator_environment: SimpleNamespace,
+) -> None:
+    """Tomorrow remains visible before midnight without duplicate intervals."""
+    local_date = date(2099, 6, 15)
+    overlap_time = datetime(2099, 6, 15, 23, tzinfo=UTC)
+    next_time = datetime(2099, 6, 16, 0, tzinfo=UTC)
+    overlap_end = datetime(2099, 6, 16, 0, tzinfo=UTC)
+    next_end = datetime(2099, 6, 16, 1, tzinfo=UTC)
+
+    current_balance = ConsumerBalance(
+        measurements=(),
+        predictions=(
+            Prediction(overlap_time, 100, 700),
+        ),
+        weather_forecasts=(),
+        recommendations=(
+            Recommendation(overlap_time, overlap_end, 100, 700, -600, "Low"),
+        ),
+        consumers=(),
+    )
+    next_balance = ConsumerBalance(
+        measurements=(),
+        predictions=(
+            Prediction(overlap_time, 125, 700),
+            Prediction(next_time, 150, 700),
+        ),
+        weather_forecasts=(),
+        recommendations=(
+            Recommendation(overlap_time, overlap_end, 125, 700, -575, "Low"),
+            Recommendation(next_time, next_end, 150, 700, -550, "Low"),
+        ),
+        consumers=(),
+    )
+    api_client = FakeApiClient(
+        results_by_date={
+            local_date: current_balance,
+            date(2099, 6, 16): next_balance,
+        }
+    )
+    coordinator = coordinator_environment.module.SmaSunnyPortalCoordinator(
+        object(),
+        object(),
+        api_client,
+        "90000000",
+        local_date_provider=lambda: local_date,
+    )
+
+    result = asyncio.run(coordinator._async_update_data())
+
+    assert [item.time_utc for item in result.predictions] == [
+        overlap_time,
+        next_time,
+    ]
+    assert [item.pv_generation_w for item in result.predictions] == [125, 150]
+    assert [item.time_utc_start for item in result.recommendations] == [
+        overlap_time,
+        next_time,
+    ]
+    assert [item.pv_generation_wh for item in result.recommendations] == [125, 150]
 
 
 def test_coordinator_marks_authentication_as_terminal(

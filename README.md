@@ -26,16 +26,20 @@ atomic token storage, the Home Assistant coordinator runtime, and a temporary
 manual-bootstrap and reauthentication flow are covered by network-free tests.
 The first sensor platform exposes SMA's next forecast interval as predicted PV
 power, predicted consumption, predicted surplus, and an explicit UTC timestamp.
-The full forecast curve remains in coordinator memory instead of being copied
-into Recorder-backed entity attributes.
+The integration also implements Home Assistant's native solar-forecast provider
+for the Energy dashboard using SMA's hourly photovoltaic-energy recommendation
+totals. Each update merges the current and following local date so tomorrow's
+forecast is already available before midnight. The full forecast curve remains
+in coordinator memory instead of being copied into Recorder-backed entity
+attributes.
 
 The temporary setup form accepts the numeric plant ID and the newest rotating
 refresh token obtained locally from an authenticated browser session. A future
 SMA-authorized OAuth client can replace this bootstrap UI without changing the
 normalized data models or entities.
 
-Daily energy totals, recommendation windows, a forecast-series action, and
-Energy dashboard support remain future milestones.
+Daily energy totals, recommendation windows, a forecast-series action,
+multi-plant discovery, and an optional dashboard remain future milestones.
 
 See [the architecture notes](docs/architecture.md) for the planned design and
 security boundaries.
