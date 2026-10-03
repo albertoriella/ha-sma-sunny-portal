@@ -95,8 +95,8 @@ future interval it predicted. It must not be implemented by copying full curves
 into sensor attributes, because Recorder would duplicate the entire payload on
 every state update.
 
-An optional bounded archive may instead store normalized forecast vintages in
-a private database with at least these dimensions:
+The integration uses a bounded private SQLite archive instead. It stores
+normalized forecast vintages with these dimensions:
 
 - provider and plant;
 - forecast issue time;
@@ -104,8 +104,20 @@ a private database with at least these dimensions:
 - predicted photovoltaic and consumption energy;
 - later observed energy and evaluation horizon.
 
-Raw vintages should have configurable retention. Compact aggregate metrics such
-as bias, MAE, and RMSE can be retained longer and exposed as diagnostics or
+The live coordinator still refreshes every 15 minutes, while the complete
+forecast curve is archived at most once per hour. Measured photovoltaic and
+consumption power is upserted on every update. Forecast vintages are retained
+for 90 days and measurements for 400 days; these defaults can become options
+after the read API and card establish their real storage requirements. The
+database is config-entry scoped, created with mode `0600`, contains no tokens,
+and is deleted with the config entry. A history-write failure is logged without
+taking live sensors offline.
+
+The first card view will use either the last day-ahead vintage available before
+local midnight or a rolling forecast assembled from the newest vintage that
+predated each target interval. Keeping `issued_at` separate from `valid_at`
+allows both views without rewriting history. Compact aggregate metrics such as
+bias, MAE, and RMSE can later be retained longer and exposed as diagnostics or
 Home Assistant statistics. This provider-neutral boundary also permits a future
 ensemble forecaster without coupling its learning logic to the SMA transport.
 

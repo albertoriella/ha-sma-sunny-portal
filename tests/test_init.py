@@ -127,6 +127,29 @@ class FakeApiClient:
         self.provider = provider
 
 
+class FakeHistoryStore:
+    """Record history-store lifecycle without touching disk."""
+
+    instances: list[FakeHistoryStore] = []
+
+    def __init__(
+        self,
+        hass: FakeHass,
+        entry_id: str,
+        plant_id: str,
+    ) -> None:
+        """Capture history scope."""
+        self.hass = hass
+        self.entry_id = entry_id
+        self.plant_id = plant_id
+        self.removed = False
+        self.instances.append(self)
+
+    async def async_remove(self) -> None:
+        """Record archive deletion."""
+        self.removed = True
+
+
 class FakeCoordinator:
     """Perform one synthetic first refresh."""
 
@@ -136,12 +159,15 @@ class FakeCoordinator:
         entry: FakeEntry,
         api_client: FakeApiClient,
         plant_id: str,
+        *,
+        history_store: FakeHistoryStore,
     ) -> None:
         """Store runtime dependencies."""
         self.hass = hass
         self.entry = entry
         self.api_client = api_client
         self.plant_id = plant_id
+        self.history_store = history_store
         self.first_refresh_complete = False
 
     async def async_config_entry_first_refresh(self) -> None:
@@ -164,6 +190,8 @@ def runtime_doubles(monkeypatch: pytest.MonkeyPatch) -> object:
 
     coordinator = ModuleType("custom_components.sma_sunny_portal.coordinator")
     coordinator.SmaSunnyPortalCoordinator = FakeCoordinator  # type: ignore[attr-defined]
+    history = ModuleType("custom_components.sma_sunny_portal.history")
+    history.SmaSunnyPortalHistoryStore = FakeHistoryStore  # type: ignore[attr-defined]
     storage = ModuleType("custom_components.sma_sunny_portal.storage")
     storage.SmaSunnyPortalRefreshTokenStore = FakeTokenStore  # type: ignore[attr-defined]
 
@@ -176,6 +204,9 @@ def runtime_doubles(monkeypatch: pytest.MonkeyPatch) -> object:
         sys.modules, "custom_components.sma_sunny_portal.coordinator", coordinator
     )
     monkeypatch.setitem(
+        sys.modules, "custom_components.sma_sunny_portal.history", history
+    )
+    monkeypatch.setitem(
         sys.modules, "custom_components.sma_sunny_portal.storage", storage
     )
     monkeypatch.setattr(integration, "SmaSunnyPortalTokenManager", FakeTokenManager)
@@ -183,6 +214,7 @@ def runtime_doubles(monkeypatch: pytest.MonkeyPatch) -> object:
 
     FakeTokenStore.instances.clear()
     FakeTokenStore.loaded_token = None
+    FakeHistoryStore.instances.clear()
     return session
 
 
@@ -214,6 +246,11 @@ def test_setup_bootstraps_private_store_and_builds_runtime(
         "synthetic-refresh-bootstrap"
     )
     assert entry.runtime_data.api_client.session is runtime_doubles
+    assert entry.runtime_data.history_store is FakeHistoryStore.instances[-1]
+    assert entry.runtime_data.history_store.plant_id == "90000000"
+    assert entry.runtime_data.coordinator.history_store is (
+        entry.runtime_data.history_store
+    )
     assert entry.runtime_data.coordinator.first_refresh_complete
     assert entry.runtime_data.coordinator.plant_id == "90000000"
     assert hass.config_entries.forwarded == [(entry, ("sensor",))]
@@ -260,3 +297,4 @@ def test_remove_entry_deletes_private_token(runtime_doubles: object) -> None:
     asyncio.run(async_remove_entry(hass, entry))
 
     assert FakeTokenStore.instances[-1].removed
+    assert FakeHistoryStore.instances[-1].removed

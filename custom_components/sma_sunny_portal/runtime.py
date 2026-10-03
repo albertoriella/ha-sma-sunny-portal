@@ -10,6 +10,7 @@ from .auth import SmaSunnyPortalTokenManager
 
 if TYPE_CHECKING:
     from .coordinator import SmaSunnyPortalCoordinator
+    from .history import SmaSunnyPortalHistoryStore
     from .storage import SmaSunnyPortalRefreshTokenStore
 
 
@@ -20,4 +21,5 @@ class SmaSunnyPortalRuntimeData:
     token_store: SmaSunnyPortalRefreshTokenStore
     token_manager: SmaSunnyPortalTokenManager
     api_client: SmaSunnyPortalApiClient
+    history_store: SmaSunnyPortalHistoryStore
     coordinator: SmaSunnyPortalCoordinator

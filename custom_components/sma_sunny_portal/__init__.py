@@ -41,6 +41,7 @@ async def async_setup_entry(
     from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
     from .coordinator import SmaSunnyPortalCoordinator
+    from .history import SmaSunnyPortalHistoryStore
     from .storage import SmaSunnyPortalRefreshTokenStore
 
     plant_id = _required_entry_string(entry, CONF_PLANT_ID)
@@ -71,11 +72,17 @@ async def async_setup_entry(
         session,
         token_manager.async_get_access_token,
     )
+    history_store = SmaSunnyPortalHistoryStore(
+        hass,
+        entry.entry_id,
+        plant_id,
+    )
     coordinator = SmaSunnyPortalCoordinator(
         hass,
         entry,
         api_client,
         plant_id,
+        history_store=history_store,
     )
 
     await coordinator.async_config_entry_first_refresh()
@@ -83,6 +90,7 @@ async def async_setup_entry(
         token_store=token_store,
         token_manager=token_manager,
         api_client=api_client,
+        history_store=history_store,
         coordinator=coordinator,
     )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -102,6 +110,13 @@ async def async_remove_entry(
     entry: SmaSunnyPortalConfigEntry,
 ) -> None:
     """Delete the private refresh-token store with its config entry."""
+    from .history import SmaSunnyPortalHistoryStore
     from .storage import SmaSunnyPortalRefreshTokenStore
 
     await SmaSunnyPortalRefreshTokenStore(hass, entry.entry_id).async_remove()
+    plant_id = _required_entry_string(entry, CONF_PLANT_ID)
+    await SmaSunnyPortalHistoryStore(
+        hass,
+        entry.entry_id,
+        plant_id,
+    ).async_remove()

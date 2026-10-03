@@ -27,3 +27,7 @@ class SmaSunnyPortalDataError(SmaSunnyPortalError):
 
 class SmaSunnyPortalTokenPersistenceError(SmaSunnyPortalError):
     """Raised when a rotated refresh token cannot be persisted safely."""
+
+
+class SmaSunnyPortalHistoryError(SmaSunnyPortalError):
+    """Raised when private forecast history cannot be stored safely."""

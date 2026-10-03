@@ -15,7 +15,12 @@ from homeassistant.util import dt as dt_util
 
 from .api import SmaSunnyPortalApiClient
 from .const import DEFAULT_UPDATE_INTERVAL, NAME
-from .errors import SmaSunnyPortalAuthenticationError, SmaSunnyPortalError
+from .errors import (
+    SmaSunnyPortalAuthenticationError,
+    SmaSunnyPortalError,
+    SmaSunnyPortalHistoryError,
+)
+from .history import SmaSunnyPortalHistoryStore
 from .models import ConsumerBalance
 
 _LOGGER = logging.getLogger(__name__)
@@ -90,6 +95,7 @@ class SmaSunnyPortalCoordinator(DataUpdateCoordinator[ConsumerBalance]):
         api_client: SmaSunnyPortalApiClient,
         plant_id: str,
         *,
+        history_store: SmaSunnyPortalHistoryStore | None = None,
         local_date_provider: LocalDateProvider = _current_local_date,
     ) -> None:
         """Initialize the account coordinator."""
@@ -103,6 +109,7 @@ class SmaSunnyPortalCoordinator(DataUpdateCoordinator[ConsumerBalance]):
         )
         self._api_client = api_client
         self._plant_id = plant_id
+        self._history_store = history_store
         self._local_date_provider = local_date_provider
 
     async def _async_update_data(self) -> ConsumerBalance:
@@ -119,7 +126,19 @@ class SmaSunnyPortalCoordinator(DataUpdateCoordinator[ConsumerBalance]):
                     current_date + timedelta(days=1),
                 ),
             )
-            return _merge_consumer_balances(current_balance, next_balance)
+            merged_balance = _merge_consumer_balances(
+                current_balance,
+                next_balance,
+            )
+            if self._history_store is not None:
+                try:
+                    await self._history_store.async_record(merged_balance)
+                except SmaSunnyPortalHistoryError:
+                    _LOGGER.warning(
+                        "Could not archive SMA forecast history; "
+                        "live data remains available"
+                    )
+            return merged_balance
         except SmaSunnyPortalAuthenticationError as err:
             raise ConfigEntryAuthFailed(
                 "SMA Sunny Portal authentication must be renewed"

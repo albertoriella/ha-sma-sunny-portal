@@ -13,6 +13,7 @@ import pytest
 from custom_components.sma_sunny_portal.errors import (
     SmaSunnyPortalAuthenticationError,
     SmaSunnyPortalConnectionError,
+    SmaSunnyPortalHistoryError,
 )
 from custom_components.sma_sunny_portal.models import (
     ConsumerBalance,
@@ -119,6 +120,21 @@ class FakeApiClient:
             return self.results_by_date[date_local]
         assert self.result is not None
         return self.result
+
+
+class FakeHistoryStore:
+    """Record coordinator archive calls or simulate a local failure."""
+
+    def __init__(self, error: Exception | None = None) -> None:
+        """Initialize call history."""
+        self.error = error
+        self.calls: list[ConsumerBalance] = []
+
+    async def async_record(self, balance: ConsumerBalance) -> None:
+        """Record one merged balance or raise the configured error."""
+        self.calls.append(balance)
+        if self.error is not None:
+            raise self.error
 
 
 def _empty_balance() -> ConsumerBalance:
@@ -252,3 +268,46 @@ def test_coordinator_marks_transport_failure_as_retryable(
 
     assert raised.value.__cause__ is error
     assert "safe synthetic connection failure" in str(raised.value)
+
+
+def test_coordinator_archives_merged_balance(
+    coordinator_environment: SimpleNamespace,
+) -> None:
+    """History sees the same complete two-day payload exposed to entities."""
+    api_client = FakeApiClient(result=_empty_balance())
+    history_store = FakeHistoryStore()
+    coordinator = coordinator_environment.module.SmaSunnyPortalCoordinator(
+        object(),
+        object(),
+        api_client,
+        "90000000",
+        history_store=history_store,
+        local_date_provider=lambda: date(2099, 6, 15),
+    )
+
+    result = asyncio.run(coordinator._async_update_data())
+
+    assert history_store.calls == [result]
+
+
+def test_coordinator_keeps_live_data_when_history_fails(
+    coordinator_environment: SimpleNamespace,
+) -> None:
+    """A local archive problem must not take live forecast entities offline."""
+    expected = _empty_balance()
+    history_store = FakeHistoryStore(
+        SmaSunnyPortalHistoryError("safe synthetic history failure")
+    )
+    coordinator = coordinator_environment.module.SmaSunnyPortalCoordinator(
+        object(),
+        object(),
+        FakeApiClient(result=expected),
+        "90000000",
+        history_store=history_store,
+        local_date_provider=lambda: date(2099, 6, 15),
+    )
+
+    result = asyncio.run(coordinator._async_update_data())
+
+    assert result == expected
+    assert history_store.calls == [expected]
