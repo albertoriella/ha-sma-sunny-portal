@@ -35,5 +35,21 @@
       "already_configured": "Questo account SMA è già configurato.",
       "wrong_account": "Il nuovo token appartiene a un account SMA differente."
     }
+  },
+  "entity": {
+    "sensor": {
+      "pv_power_forecast": {
+        "name": "Previsione potenza FV - prossimo intervallo"
+      },
+      "consumption_power_forecast": {
+        "name": "Previsione potenza consumata - prossimo intervallo"
+      },
+      "surplus_power_forecast": {
+        "name": "Previsione potenza in surplus - prossimo intervallo"
+      },
+      "next_forecast_time": {
+        "name": "Prossimo intervallo di previsione"
+      }
+    }
   }
 }

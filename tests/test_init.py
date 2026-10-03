@@ -14,6 +14,7 @@ from custom_components.sma_sunny_portal import (
     SmaSunnyPortalRuntimeData,
     async_remove_entry,
     async_setup_entry,
+    async_unload_entry,
 )
 
 
@@ -23,12 +24,33 @@ class FakeConfigEntries:
     def __init__(self) -> None:
         """Initialize update history."""
         self.updates: list[dict[str, Any]] = []
+        self.forwarded: list[tuple[FakeEntry, tuple[str, ...]]] = []
+        self.unloaded: list[tuple[FakeEntry, tuple[str, ...]]] = []
+        self.unload_result = True
 
     def async_update_entry(self, entry: FakeEntry, *, data: dict[str, Any]) -> bool:
         """Replace entry data and record the update."""
         entry.data = data
         self.updates.append(data)
         return True
+
+    async def async_forward_entry_setups(
+        self,
+        entry: FakeEntry,
+        platforms: tuple[str, ...],
+    ) -> None:
+        """Record platform forwarding after runtime initialization."""
+        assert entry.runtime_data is not None
+        self.forwarded.append((entry, platforms))
+
+    async def async_unload_platforms(
+        self,
+        entry: FakeEntry,
+        platforms: tuple[str, ...],
+    ) -> bool:
+        """Record platform unloading and return its configured result."""
+        self.unloaded.append((entry, platforms))
+        return self.unload_result
 
 
 class FakeHass:
@@ -194,6 +216,7 @@ def test_setup_bootstraps_private_store_and_builds_runtime(
     assert entry.runtime_data.api_client.session is runtime_doubles
     assert entry.runtime_data.coordinator.first_refresh_complete
     assert entry.runtime_data.coordinator.plant_id == "90000000"
+    assert hass.config_entries.forwarded == [(entry, ("sensor",))]
 
 
 def test_setup_prefers_latest_private_token(runtime_doubles: object) -> None:
@@ -215,6 +238,17 @@ def test_setup_prefers_latest_private_token(runtime_doubles: object) -> None:
     assert runtime.token_manager.refresh_token == "synthetic-refresh-private-latest"
     assert FakeTokenStore.instances[-1].saved == ["synthetic-refresh-rotated"]
     assert "refresh_token" not in entry.data
+    assert hass.config_entries.forwarded == [(entry, ("sensor",))]
+
+
+def test_unload_entry_unloads_sensor_platform(runtime_doubles: object) -> None:
+    """Unloading an entry delegates to all forwarded entity platforms."""
+    del runtime_doubles
+    hass = FakeHass()
+    entry = FakeEntry({"plant_id": "90000000"})
+
+    assert asyncio.run(async_unload_entry(hass, entry))
+    assert hass.config_entries.unloaded == [(entry, ("sensor",))]
 
 
 def test_remove_entry_deletes_private_token(runtime_doubles: object) -> None:

@@ -16,6 +16,8 @@ if TYPE_CHECKING:
 
     type SmaSunnyPortalConfigEntry = ConfigEntry[SmaSunnyPortalRuntimeData]
 
+PLATFORMS = ("sensor",)
+
 
 def _required_entry_string(entry: SmaSunnyPortalConfigEntry, key: str) -> str:
     """Return a non-empty config-entry string without exposing its value."""
@@ -83,6 +85,7 @@ async def async_setup_entry(
         api_client=api_client,
         coordinator=coordinator,
     )
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
@@ -90,9 +93,8 @@ async def async_unload_entry(
     hass: HomeAssistant,
     entry: SmaSunnyPortalConfigEntry,
 ) -> bool:
-    """Unload an entry; the coordinator shutdown is registered by Home Assistant."""
-    del hass, entry
-    return True
+    """Unload all entity platforms owned by the config entry."""
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
 async def async_remove_entry(

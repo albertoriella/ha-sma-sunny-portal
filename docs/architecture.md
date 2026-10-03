@@ -58,7 +58,18 @@ rotation directly to the private token store before reloading the entry.
 A `DataUpdateCoordinator` performs one cloud update approximately every 15
 minutes, requests the current date in Home Assistant's configured time zone,
 and translates expired authentication into config-entry reauthentication.
-Entities will read normalized immutable data from the coordinator.
+Entities read normalized immutable data from the coordinator. The initial
+sensor platform selects the first forecast timestamp at or after the current
+UTC time and exposes four entities:
+
+- predicted photovoltaic power for the next interval;
+- predicted consumption power for the next interval;
+- predicted surplus power for the next interval;
+- the next forecast interval timestamp.
+
+If Sunny Portal temporarily returns no future prediction, these sensors become
+unavailable while the coordinator remains healthy. This distinguishes a valid
+empty forecast from a transport failure without inventing zero values.
 
 Planned entities include:
 
@@ -70,8 +81,9 @@ Planned entities include:
 
 The photovoltaic forecast may also be exposed through the Home Assistant
 Energy dashboard by converting quarter-hour power samples into hourly energy.
-Large forecast arrays should remain in coordinator memory or be excluded from
-Recorder to avoid unnecessary database growth.
+Large forecast arrays remain in coordinator memory instead of being repeated
+in Recorder-backed state attributes. A future response-producing action can
+return the cached series on demand for dashboards and automations.
 
 ## Tests and fixtures
 

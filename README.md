@@ -5,8 +5,8 @@ generation, household consumption, weather indicators, and energy-surplus
 forecasts from SMA Sunny Portal powered by ennexOS.
 
 > [!WARNING]
-> This repository is in the bootstrap phase. It does not provide a functional
-> Home Assistant integration yet and must not be installed in production.
+> This repository is in an early pre-release phase. It uses an undocumented
+> backend and must not be installed with production credentials yet.
 
 ## Project goals
 
@@ -24,12 +24,18 @@ multi-day endurance test. Synthetic protocol fixtures, normalized immutable
 models, an asynchronous HTTP client, serialized refresh-token rotation, private
 atomic token storage, the Home Assistant coordinator runtime, and a temporary
 manual-bootstrap and reauthentication flow are covered by network-free tests.
-The next milestone is the first set of forecast sensors.
+The first sensor platform exposes SMA's next forecast interval as predicted PV
+power, predicted consumption, predicted surplus, and an explicit UTC timestamp.
+The full forecast curve remains in coordinator memory instead of being copied
+into Recorder-backed entity attributes.
 
 The temporary setup form accepts the numeric plant ID and the newest rotating
 refresh token obtained locally from an authenticated browser session. A future
 SMA-authorized OAuth client can replace this bootstrap UI without changing the
 normalized data models or entities.
+
+Daily energy totals, recommendation windows, a forecast-series action, and
+Energy dashboard support remain future milestones.
 
 See [the architecture notes](docs/architecture.md) for the planned design and
 security boundaries.

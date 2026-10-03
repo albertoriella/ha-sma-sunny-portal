@@ -35,5 +35,21 @@
       "already_configured": "This SMA account is already configured.",
       "wrong_account": "The new token belongs to a different SMA account."
     }
+  },
+  "entity": {
+    "sensor": {
+      "pv_power_forecast": {
+        "name": "PV power forecast - next interval"
+      },
+      "consumption_power_forecast": {
+        "name": "Consumption power forecast - next interval"
+      },
+      "surplus_power_forecast": {
+        "name": "Surplus power forecast - next interval"
+      },
+      "next_forecast_time": {
+        "name": "Next forecast interval"
+      }
+    }
   }
 }
