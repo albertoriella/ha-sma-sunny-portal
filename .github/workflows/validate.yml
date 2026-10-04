@@ -41,6 +41,9 @@ jobs:
       - name: Run tests
         run: python -m pytest
 
+      - name: Check frontend syntax
+        run: node --check custom_components/sma_sunny_portal/frontend_assets/sma-sunny-portal-energy-card.js
+
       - name: Check formatting
         run: python -m ruff format --check .
 

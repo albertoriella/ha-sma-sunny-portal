@@ -73,6 +73,12 @@ class FakeConfigEntries:
             return None
         return self.entry
 
+    def async_entries(self, domain: str) -> list[SimpleNamespace]:
+        """Return the synthetic entry only for its integration domain."""
+        if self.entry is None or self.entry.domain != domain:
+            return []
+        return [self.entry]
+
 
 class FakeHass:
     """Minimal Home Assistant instance for a history query."""
@@ -90,6 +96,7 @@ class FakeHass:
         entry = SimpleNamespace(
             entry_id="synthetic-entry",
             domain=domain,
+            title="Synthetic SMA plant",
             runtime_data=runtime_data,
         )
         self.config_entries = FakeConfigEntries(entry)
@@ -326,9 +333,50 @@ def test_history_command_redacts_archive_failures(
 
 
 def test_registers_history_command(websocket_module: ModuleType) -> None:
-    """Component setup can register the command exactly once."""
+    """Component setup registers both authenticated frontend commands."""
     hass = FakeHass(FakeHistoryStore(ArchivedDay((), (), None, None)))
 
     websocket_module.async_register_websocket_commands(hass)
 
-    assert hass.registered_commands == [websocket_module.websocket_get_history]
+    assert hass.registered_commands == [
+        websocket_module.websocket_get_history,
+        websocket_module.websocket_get_entries,
+    ]
+
+
+def test_entries_command_returns_only_safe_card_metadata(
+    websocket_module: ModuleType,
+) -> None:
+    """The card can discover one entry without receiving plant data or tokens."""
+    store = FakeHistoryStore(ArchivedDay((), (), None, None))
+    hass = FakeHass(store)
+    connection = FakeConnection()
+
+    asyncio.run(
+        websocket_module.websocket_get_entries(
+            hass,
+            connection,
+            {
+                "id": 12,
+                "type": "sma_sunny_portal/entries",
+            },
+        )
+    )
+
+    assert connection.errors == []
+    assert connection.results == [
+        (
+            12,
+            {
+                "entries": [
+                    {
+                        "entry_id": "synthetic-entry",
+                        "title": "Synthetic SMA plant",
+                        "loaded": True,
+                    }
+                ]
+            },
+        )
+    ]
+    assert "plant_id" not in str(connection.results)
+    assert "refresh_token" not in str(connection.results)

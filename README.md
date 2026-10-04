@@ -33,23 +33,24 @@ forecast is already available before midnight. The full forecast curve remains
 in coordinator memory instead of being copied into Recorder-backed entity
 attributes. A private, bounded SQLite archive records real photovoltaic and
 consumption measurements on every update and one complete photovoltaic and
-consumption forecast vintage per hour. This is the storage foundation for a
-future Energy Live card that can move between dates and compare forecasts with
-what actually happened. An authenticated Home Assistant WebSocket command now
+consumption forecast vintage per hour. An authenticated Home Assistant
+WebSocket command
 reads one local date at a time from that archive without copying large curves
 into entity attributes or Recorder. It can return the newest archived curve, a
 day-ahead curve frozen at local midnight, or a rolling curve assembled from the
-newest forecast available before each target interval.
+newest forecast available before each target interval. The optional
+`SMA Energy Live` Lovelace card consumes that private API and plots measured and
+forecast PV, consumption, surplus, and deficit with calendar navigation.
 
 The temporary setup form accepts the numeric plant ID and the newest rotating
 refresh token obtained locally from an authenticated browser session. A future
 SMA-authorized OAuth client can replace this bootstrap UI without changing the
 normalized data models or entities.
 
-Daily energy totals, recommendation windows, multi-plant discovery, and the
-optional Energy Live card remain future milestones. Historical forecast curves
-only exist from the first successful update after archive support is installed;
-they cannot be recreated reliably from Home Assistant Recorder later.
+Daily energy totals, recommendation windows, and account-level multi-plant
+discovery remain future milestones. Historical forecast curves only exist from
+the first successful update after archive support is installed; they cannot be
+recreated reliably from Home Assistant Recorder later.
 
 The private history command is `sma_sunny_portal/history`. It requires the
 config-entry ID, a canonical local date (`YYYY-MM-DD`), and optionally one of
@@ -65,6 +66,38 @@ for the integration's own optional frontend card and other authenticated Home
 Assistant frontends; it is not a public SMA endpoint. `day_ahead` deliberately
 returns no curve when the archive has no pre-midnight vintage, as happens on the
 first archive day, instead of substituting a hindsight forecast.
+
+## Optional Energy Live card
+
+The integration ships a dependency-free custom card and registers it locally;
+no separate Lovelace resource or JavaScript download is required. After
+installing or updating the integration, restart Home Assistant and perform one
+hard browser refresh. Then open a dashboard editor, choose **Add card**, and
+search for **SMA Energy Live**.
+
+When exactly one SMA config entry exists, the empty card configuration is
+enough:
+
+```yaml
+type: custom:sma-sunny-portal-energy-card
+```
+
+The visual editor can select a specific entry when more than one exists, choose
+the initial forecast mode, and override the title. The card provides:
+
+- previous/next day buttons, a calendar input, and a Today shortcut;
+- solid measured PV and consumption curves;
+- dashed forecast PV and consumption curves;
+- a separate positive-surplus and negative-deficit plot;
+- `latest`, `day_ahead`, and `rolling` forecast selection;
+- forecast-issue provenance and archive availability bounds;
+- English and Italian labels following the Home Assistant language.
+
+The card does not create or overwrite a dashboard. This keeps installation
+reversible and lets each user place it in an existing Energy Live view or a new
+view without changing unrelated Lovelace configuration. Dates before archive
+installation remain empty by design. On the first archive day, `day_ahead` may
+also be empty because no pre-midnight snapshot exists yet.
 
 See [the architecture notes](docs/architecture.md) for the planned design and
 security boundaries.

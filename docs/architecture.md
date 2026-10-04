@@ -151,8 +151,37 @@ paths, credentials, plant telemetry, or exception text.
 The command is available to authenticated Home Assistant users, matching normal
 entity-history visibility. It performs bounded, read-only queries in an
 executor thread; the SQLite file remains private (`0600`) and is never served as
-a downloadable asset. The optional frontend card will consume this command in a
-later, separate step.
+a downloadable asset.
+
+## Optional Energy Live frontend
+
+The integration serves one dependency-free JavaScript module from its own
+component directory and registers it through Home Assistant's frontend and
+static-path APIs. It does not use a CDN, iframe, remote script, custom panel, or
+dashboard strategy. The regular Lovelace custom-card boundary keeps the feature
+optional and lets standard Masonry and Sections views own card lifecycle and
+layout.
+
+`SMA Energy Live` calls only the authenticated WebSocket commands registered by
+the integration. A small `sma_sunny_portal/entries` command exposes config-entry
+ID, title, and loaded state, but never plant identifiers, telemetry, or tokens.
+This lets the card automatically select the only entry while its visual editor
+provides an explicit selector when multiple entries exist. Historical curves
+continue to stay out of entity attributes and Recorder.
+
+The card displays one bounded local day at a time and uses the UTC boundaries
+returned by the backend, so 23- and 25-hour daylight-saving days retain their
+true duration. It renders measured and forecast PV and consumption in a main
+plot and surplus/deficit in a second plot. Forecast mode selection is an
+explicit user control; the UI never substitutes one provenance mode for
+another.
+
+The integration deliberately does not create, mutate, or delete a user's
+Lovelace dashboard. Automatic whole-dashboard installation is difficult to
+reverse, risks overwriting user-managed storage/YAML configuration, and couples
+the data integration to a particular layout. Shipping a discoverable card in
+the same repository preserves the useful shared experience without crossing
+that ownership boundary.
 
 ## Tests and fixtures
 

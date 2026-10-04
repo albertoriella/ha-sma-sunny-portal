@@ -16,6 +16,7 @@ from .errors import SmaSunnyPortalHistoryError
 from .history import FORECAST_HISTORY_MODES, ForecastHistoryMode
 
 WEBSOCKET_COMMAND_HISTORY = f"{DOMAIN}/history"
+WEBSOCKET_COMMAND_ENTRIES = f"{DOMAIN}/entries"
 
 
 def _parse_iso_date(value: str) -> date | None:
@@ -141,6 +142,38 @@ async def websocket_get_history(
     )
 
 
+@websocket_api.websocket_command(
+    {
+        probatio.Required("type"): WEBSOCKET_COMMAND_ENTRIES,
+    }
+)
+@websocket_api.async_response
+async def websocket_get_entries(
+    hass: HomeAssistant,
+    connection: ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """List configured integration entries without exposing plant credentials."""
+    entries = sorted(
+        hass.config_entries.async_entries(DOMAIN),
+        key=lambda entry: (entry.title.casefold(), entry.entry_id),
+    )
+    connection.send_result(
+        msg["id"],
+        {
+            "entries": [
+                {
+                    "entry_id": entry.entry_id,
+                    "title": entry.title,
+                    "loaded": getattr(entry, "runtime_data", None) is not None,
+                }
+                for entry in entries
+            ]
+        },
+    )
+
+
 def async_register_websocket_commands(hass: HomeAssistant) -> None:
     """Register the integration's authenticated WebSocket commands."""
     websocket_api.async_register_command(hass, websocket_get_history)
+    websocket_api.async_register_command(hass, websocket_get_entries)

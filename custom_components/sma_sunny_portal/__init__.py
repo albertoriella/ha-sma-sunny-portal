@@ -23,9 +23,11 @@ PLATFORMS = ("sensor",)
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Register account-independent integration services."""
     del config
+    from .frontend import async_register_frontend
     from .websocket import async_register_websocket_commands
 
     async_register_websocket_commands(hass)
+    await async_register_frontend(hass)
     return True
 
 

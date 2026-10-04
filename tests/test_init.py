@@ -256,22 +256,35 @@ def test_setup_bootstraps_private_store_and_builds_runtime(
     assert hass.config_entries.forwarded == [(entry, ("sensor",))]
 
 
-def test_component_setup_registers_websocket_commands(
+def test_component_setup_registers_websocket_commands_and_frontend(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Domain setup exposes the authenticated history read API once."""
+    """Domain setup exposes the private API and awaits frontend registration."""
     websocket = ModuleType("custom_components.sma_sunny_portal.websocket")
     registered: list[FakeHass] = []
     websocket.async_register_websocket_commands = registered.append  # type: ignore[attr-defined]
+    frontend = ModuleType("custom_components.sma_sunny_portal.frontend")
+    frontend_registered: list[FakeHass] = []
+
+    async def async_register_frontend(hass: FakeHass) -> None:
+        frontend_registered.append(hass)
+
+    frontend.async_register_frontend = async_register_frontend  # type: ignore[attr-defined]
     monkeypatch.setitem(
         sys.modules,
         "custom_components.sma_sunny_portal.websocket",
         websocket,
     )
+    monkeypatch.setitem(
+        sys.modules,
+        "custom_components.sma_sunny_portal.frontend",
+        frontend,
+    )
     hass = FakeHass()
 
     assert asyncio.run(integration.async_setup(hass, {}))
     assert registered == [hass]
+    assert frontend_registered == [hass]
 
 
 def test_setup_prefers_latest_private_token(runtime_doubles: object) -> None:
