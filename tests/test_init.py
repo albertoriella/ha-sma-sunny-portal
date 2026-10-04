@@ -176,6 +176,14 @@ class FakeCoordinator:
         self.first_refresh_complete = True
 
 
+def test_component_schema_is_config_entry_only() -> None:
+    """YAML configuration is rejected in favor of config entries."""
+    assert integration.CONFIG_SCHEMA == (
+        "config_entry_only",
+        "sma_sunny_portal",
+    )
+
+
 @pytest.fixture
 def runtime_doubles(monkeypatch: pytest.MonkeyPatch) -> object:
     """Install local-import doubles used by async_setup_entry."""
