@@ -13,10 +13,20 @@ from .runtime import SmaSunnyPortalRuntimeData
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.typing import ConfigType
 
     type SmaSunnyPortalConfigEntry = ConfigEntry[SmaSunnyPortalRuntimeData]
 
 PLATFORMS = ("sensor",)
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Register account-independent integration services."""
+    del config
+    from .websocket import async_register_websocket_commands
+
+    async_register_websocket_commands(hass)
+    return True
 
 
 def _required_entry_string(entry: SmaSunnyPortalConfigEntry, key: str) -> str:

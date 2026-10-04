@@ -256,6 +256,24 @@ def test_setup_bootstraps_private_store_and_builds_runtime(
     assert hass.config_entries.forwarded == [(entry, ("sensor",))]
 
 
+def test_component_setup_registers_websocket_commands(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Domain setup exposes the authenticated history read API once."""
+    websocket = ModuleType("custom_components.sma_sunny_portal.websocket")
+    registered: list[FakeHass] = []
+    websocket.async_register_websocket_commands = registered.append  # type: ignore[attr-defined]
+    monkeypatch.setitem(
+        sys.modules,
+        "custom_components.sma_sunny_portal.websocket",
+        websocket,
+    )
+    hass = FakeHass()
+
+    assert asyncio.run(integration.async_setup(hass, {}))
+    assert registered == [hass]
+
+
 def test_setup_prefers_latest_private_token(runtime_doubles: object) -> None:
     """A restart never falls back to a stale config-entry bootstrap token."""
     del runtime_doubles

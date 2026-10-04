@@ -121,6 +121,39 @@ bias, MAE, and RMSE can later be retained longer and exposed as diagnostics or
 Home Assistant statistics. This provider-neutral boundary also permits a future
 ensemble forecaster without coupling its learning logic to the SMA transport.
 
+## Private history read API
+
+The integration registers the authenticated Home Assistant WebSocket command
+`sma_sunny_portal/history`. The frontend supplies a config-entry ID, a local
+calendar date, and a forecast selection mode. The backend resolves local
+midnight boundaries using Home Assistant's configured time zone before reading
+SQLite, so daylight-saving dates correctly span 23 or 25 hours.
+
+The supported selection modes are deliberately explicit:
+
+- `latest` selects the newest single archived vintage that overlaps the day;
+- `day_ahead` selects the newest single vintage issued at or before local
+  midnight, which provides a stable no-hindsight comparison;
+- `rolling` independently selects the newest vintage issued no later than each
+  target timestamp, approximating what was knowable at every interval.
+
+If no pre-midnight vintage exists, `day_ahead` returns no predicted points. It
+must never silently fall back to an after-midnight curve because that would
+invalidate later forecast-quality comparisons.
+
+Responses contain measured PV and consumption power, forecast PV and
+consumption power, derived surplus, and both issue and target timestamps.
+Archive-wide first/last availability bounds allow the future card to constrain
+calendar navigation. Empty dates return empty arrays rather than fabricated
+zeroes. Storage errors use fixed public error codes and never expose database
+paths, credentials, plant telemetry, or exception text.
+
+The command is available to authenticated Home Assistant users, matching normal
+entity-history visibility. It performs bounded, read-only queries in an
+executor thread; the SQLite file remains private (`0600`) and is never served as
+a downloadable asset. The optional frontend card will consume this command in a
+later, separate step.
+
 ## Tests and fixtures
 
 Network-free tests will cover parsing, time zones, daylight-saving transitions,
