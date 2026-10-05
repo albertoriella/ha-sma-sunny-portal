@@ -70,10 +70,12 @@ first archive day, instead of substituting a hindsight forecast.
 ## Optional Energy Live card
 
 The integration ships a dependency-free custom card and registers it locally;
-no separate Lovelace resource or JavaScript download is required. After
-installing or updating the integration, restart Home Assistant and perform one
-hard browser refresh. Then open a dashboard editor, choose **Add card**, and
-search for **SMA Energy Live**.
+no separate Lovelace resource or JavaScript download is required. Its custom
+elements are registered only after Home Assistant's final scoped registry is
+available, avoiding the frontend startup race that can otherwise lose elements
+loaded through `add_extra_js_url`. After installing or updating the integration,
+restart Home Assistant and perform one hard browser refresh. Then open a
+dashboard editor, choose **Add card**, and search for **SMA Energy Live**.
 
 When exactly one SMA config entry exists, the empty card configuration is
 enough:
@@ -86,9 +88,12 @@ The visual editor can select a specific entry when more than one exists, choose
 the initial forecast mode, and override the title. The card provides:
 
 - previous/next day buttons, a calendar input, and a Today shortcut;
-- solid measured PV and consumption curves;
-- dashed forecast PV and consumption curves;
-- a separate positive-surplus and negative-deficit plot;
+- one shared-axis graph with a common zero for PV, consumption, surplus, and
+  deficit;
+- solid measured PV and consumption curves and dashed forecast curves;
+- positive surplus above zero and negative deficit below zero;
+- a clickable legend that starts with every series visible and can hide any
+  series independently;
 - `latest`, `day_ahead`, and `rolling` forecast selection;
 - forecast-issue provenance and archive availability bounds;
 - English and Italian labels following the Home Assistant language.

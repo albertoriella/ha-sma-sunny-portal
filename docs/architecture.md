@@ -160,7 +160,10 @@ component directory and registers it through Home Assistant's frontend and
 static-path APIs. It does not use a CDN, iframe, remote script, custom panel, or
 dashboard strategy. The regular Lovelace custom-card boundary keeps the feature
 optional and lets standard Masonry and Sections views own card lifecycle and
-layout.
+layout. The module waits until the final Home Assistant custom-element registry
+contains the root application element before defining the card and editor. This
+avoids losing the definitions if the scoped-registry polyfill replaces the
+browser's native registry after an extra frontend module has already executed.
 
 `SMA Energy Live` calls only the authenticated WebSocket commands registered by
 the integration. A small `sma_sunny_portal/entries` command exposes config-entry
@@ -171,10 +174,12 @@ continue to stay out of entity attributes and Recorder.
 
 The card displays one bounded local day at a time and uses the UTC boundaries
 returned by the backend, so 23- and 25-hour daylight-saving days retain their
-true duration. It renders measured and forecast PV and consumption in a main
-plot and surplus/deficit in a second plot. Forecast mode selection is an
-explicit user control; the UI never substitutes one provenance mode for
-another.
+true duration. Measured and forecast PV, consumption, surplus, and deficit use
+one shared power axis and one physical zero; deficit is the only negative
+series. A clickable accessible legend controls each logical series, initially
+with all six enabled, and the scale follows the visible series. Forecast mode
+selection is an explicit user control; the UI never substitutes one provenance
+mode for another.
 
 The integration deliberately does not create, mutate, or delete a user's
 Lovelace dashboard. Automatic whole-dashboard installation is difficult to

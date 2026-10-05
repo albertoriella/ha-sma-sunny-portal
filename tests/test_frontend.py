@@ -100,7 +100,7 @@ def test_frontend_registration_is_private_local_and_idempotent(
     assert Path(static_path.path).is_file()
     assert static_path.cache_headers is False
     assert hass.extra_js_urls == [
-        "/sma_sunny_portal/frontend/sma-sunny-portal-energy-card.js?v=1"
+        "/sma_sunny_portal/frontend/sma-sunny-portal-energy-card.js?v=2"
     ]
 
 
@@ -114,8 +114,15 @@ def test_frontend_asset_has_no_external_runtime_dependencies() -> None:
         / "sma-sunny-portal-energy-card.js"
     ).read_text(encoding="utf-8")
 
-    assert "customElements.define(CARD_TAG" in asset
-    assert "customElements.define(EDITOR_TAG" in asset
+    assert "const registerCustomElementsWhenReady" in asset
+    assert "registry?.get(HA_ROOT_TAG)" in asset
+    assert "registry.define(CARD_TAG" in asset
+    assert "registry.define(EDITOR_TAG" in asset
+    assert 'data-series="${key}"' in asset
+    assert "this._visibleSeries = new Set(SERIES_KEYS)" in asset
+    assert "const zeroY = yFor(0)" in asset
+    assert "balanceTop" not in asset
+    assert "yBalance" not in asset
     assert '"sma_sunny_portal/history"' in asset
     assert '"sma_sunny_portal/entries"' in asset
     assert "https://" not in asset

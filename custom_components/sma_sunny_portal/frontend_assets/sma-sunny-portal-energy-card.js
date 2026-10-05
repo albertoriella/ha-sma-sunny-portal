@@ -1,8 +1,17 @@
 const CARD_TAG = "sma-sunny-portal-energy-card";
 const EDITOR_TAG = "sma-sunny-portal-energy-card-editor";
+const HA_ROOT_TAG = "home-assistant";
 const HISTORY_COMMAND = "sma_sunny_portal/history";
 const ENTRIES_COMMAND = "sma_sunny_portal/entries";
 const FORECAST_MODES = ["latest", "day_ahead", "rolling"];
+const SERIES_KEYS = [
+  "actual_pv",
+  "forecast_pv",
+  "actual_consumption",
+  "forecast_consumption",
+  "surplus",
+  "deficit",
+];
 
 const STRINGS = {
   en: {
@@ -31,7 +40,7 @@ const STRINGS = {
     consumption: "Consumption",
     surplus: "Surplus",
     deficit: "Deficit",
-    power: "PV and consumption power",
+    power: "PV, consumption, and balance power",
     balance: "Surplus and deficit",
     forecastIssued: "Forecast issued",
     forecastVersions: "forecast versions",
@@ -75,7 +84,7 @@ const STRINGS = {
     consumption: "Consumo",
     surplus: "Surplus",
     deficit: "Deficit",
-    power: "Potenza FV e consumo",
+    power: "Potenza FV, consumo e bilancio",
     balance: "Surplus e deficit",
     forecastIssued: "Previsione emessa",
     forecastVersions: "versioni previsionali",
@@ -381,25 +390,59 @@ const CARD_STYLES = `
     display: flex;
     flex-wrap: wrap;
     font-size: 0.76rem;
-    gap: 8px 16px;
+    gap: 4px 8px;
     margin: 5px 0 0 68px;
   }
   .legend-item {
     align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
     color: var(--secondary-text-color);
+    cursor: pointer;
     display: inline-flex;
     gap: 5px;
+    min-height: 28px;
+    padding: 3px 6px;
+  }
+  .legend-item:hover {
+    background: var(--secondary-background-color);
+  }
+  .legend-item[aria-pressed="false"] {
+    opacity: 0.42;
+  }
+  .legend-check {
+    align-items: center;
+    background: var(--series-color);
+    border: 2px solid var(--series-color);
+    border-radius: 50%;
+    color: #fff;
+    display: inline-flex;
+    font-size: 10px;
+    font-weight: 700;
+    height: 14px;
+    justify-content: center;
+    line-height: 1;
+    width: 14px;
+  }
+  .legend-item[aria-pressed="false"] .legend-check {
+    background: transparent;
+    color: transparent;
   }
   .legend-line {
-    border-top: 3px solid;
+    border-color: var(--series-color);
+    border-top-style: solid;
+    border-top-width: 3px;
     display: inline-block;
     width: 22px;
   }
   .legend-line.dashed { border-top-style: dashed; }
-  .legend-line.pv { border-color: var(--warning-color, #f2c037); }
-  .legend-line.consumption { border-color: var(--primary-color, #03a9f4); }
-  .legend-line.surplus { border-color: var(--success-color, #43a047); }
-  .legend-line.deficit { border-color: var(--error-color, #db4437); }
+  .legend-item.pv-actual { --series-color: var(--warning-color, #f2c037); }
+  .legend-item.pv-forecast { --series-color: #f5a623; }
+  .legend-item.consumption-actual { --series-color: var(--primary-color, #03a9f4); }
+  .legend-item.consumption-forecast { --series-color: #6574cd; }
+  .legend-item.surplus { --series-color: var(--success-color, #43a047); }
+  .legend-item.deficit { --series-color: var(--error-color, #db4437); }
   .tooltip {
     background: color-mix(in srgb, var(--card-background-color, #fff) 94%, transparent);
     border: 1px solid var(--divider-color, #d8d8d8);
@@ -471,6 +514,7 @@ class SmaSunnyPortalEnergyCard extends HTMLElement {
     this._loading = false;
     this._started = false;
     this._requestSequence = 0;
+    this._visibleSeries = new Set(SERIES_KEYS);
   }
 
   static getConfigElement() {
@@ -617,40 +661,62 @@ class SmaSunnyPortalEnergyCard extends HTMLElement {
     const left = 68;
     const right = 18;
     const plotWidth = width - left - right;
-    const mainTop = 38;
-    const mainHeight = 235;
-    const balanceTop = 334;
-    const balanceHeight = 96;
-    const chartBottom = 455;
+    const chartTop = 38;
+    const chartHeight = 315;
+    const chartBottom = chartTop + chartHeight;
+    const timeLabelY = chartBottom + 29;
     const xFor = (timestamp) =>
       left + ((timestamp - startTime) / (endTime - startTime)) * plotWidth;
-    const allPower = [...measurements, ...predictions].flatMap((point) => [
-      Number(point.pv_generation_w),
-      Number(point.total_consumption_w),
-    ]);
-    const powerMaximum = niceMaximum(Math.max(0, ...allPower.filter(Number.isFinite)));
-    const yPower = (value) => mainTop + mainHeight - (value / powerMaximum) * mainHeight;
-    const allBalances = [...measurements, ...predictions]
-      .map((point) => Math.abs(Number(point.surplus_w)))
-      .filter(Number.isFinite);
-    const balanceMaximum = niceMaximum(Math.max(0, ...allBalances));
-    const balanceMid = balanceTop + balanceHeight / 2;
-    const yBalance = (value) => balanceMid - (value / balanceMaximum) * (balanceHeight / 2);
+    const valuesFor = (points, key) =>
+      points.map((point) => Number(point[key])).filter(Number.isFinite);
+    const visibleValues = [];
+    if (this._visibleSeries.has("actual_pv")) {
+      visibleValues.push(...valuesFor(measurements, "pv_generation_w"));
+    }
+    if (this._visibleSeries.has("forecast_pv")) {
+      visibleValues.push(...valuesFor(predictions, "pv_generation_w"));
+    }
+    if (this._visibleSeries.has("actual_consumption")) {
+      visibleValues.push(...valuesFor(measurements, "total_consumption_w"));
+    }
+    if (this._visibleSeries.has("forecast_consumption")) {
+      visibleValues.push(...valuesFor(predictions, "total_consumption_w"));
+    }
+    const allBalanceValues = valuesFor([...measurements, ...predictions], "surplus_w");
+    if (this._visibleSeries.has("surplus")) {
+      visibleValues.push(...allBalanceValues.filter((value) => value >= 0));
+    }
+    if (this._visibleSeries.has("deficit")) {
+      visibleValues.push(...allBalanceValues.filter((value) => value <= 0));
+    }
+    const positiveMaximum = niceMaximum(
+      Math.max(0, ...visibleValues.filter((value) => value >= 0)),
+    );
+    const negativeMagnitude = Math.max(
+      0,
+      ...visibleValues.filter((value) => value < 0).map(Math.abs),
+    );
+    const negativeMaximum = negativeMagnitude > 0 ? niceMaximum(negativeMagnitude) : 0;
+    const axisMinimum = -negativeMaximum;
+    const axisMaximum = positiveMaximum;
+    const axisSpan = axisMaximum - axisMinimum;
+    const yFor = (value) => chartTop + ((axisMaximum - value) / axisSpan) * chartHeight;
+    const zeroY = yFor(0);
 
-    const actualPvPath = pathFor(measurements, "pv_generation_w", xFor, yPower, 20 * 60 * 1000);
+    const actualPvPath = pathFor(measurements, "pv_generation_w", xFor, yFor, 20 * 60 * 1000);
     const actualConsumptionPath = pathFor(
       measurements,
       "total_consumption_w",
       xFor,
-      yPower,
+      yFor,
       20 * 60 * 1000,
     );
-    const forecastPvPath = pathFor(predictions, "pv_generation_w", xFor, yPower, 50 * 60 * 1000);
+    const forecastPvPath = pathFor(predictions, "pv_generation_w", xFor, yFor, 50 * 60 * 1000);
     const forecastConsumptionPath = pathFor(
       predictions,
       "total_consumption_w",
       xFor,
-      yPower,
+      yFor,
       50 * 60 * 1000,
     );
     const actualPositivePath = signedPathFor(
@@ -658,7 +724,7 @@ class SmaSunnyPortalEnergyCard extends HTMLElement {
       "surplus_w",
       "positive",
       xFor,
-      yBalance,
+      yFor,
       20 * 60 * 1000,
     );
     const actualNegativePath = signedPathFor(
@@ -666,7 +732,7 @@ class SmaSunnyPortalEnergyCard extends HTMLElement {
       "surplus_w",
       "negative",
       xFor,
-      yBalance,
+      yFor,
       20 * 60 * 1000,
     );
     const forecastPositivePath = signedPathFor(
@@ -674,7 +740,7 @@ class SmaSunnyPortalEnergyCard extends HTMLElement {
       "surplus_w",
       "positive",
       xFor,
-      yBalance,
+      yFor,
       50 * 60 * 1000,
     );
     const forecastNegativePath = signedPathFor(
@@ -682,14 +748,15 @@ class SmaSunnyPortalEnergyCard extends HTMLElement {
       "surplus_w",
       "negative",
       xFor,
-      yBalance,
+      yFor,
       50 * 60 * 1000,
     );
 
-    const horizontalGrid = Array.from({ length: 5 }, (_, index) => {
-      const ratio = index / 4;
-      const y = mainTop + mainHeight - ratio * mainHeight;
-      const value = powerMaximum * ratio;
+    const horizontalGrid = Array.from({ length: 7 }, (_, index) => {
+      const ratio = index / 6;
+      const y = chartTop + ratio * chartHeight;
+      const value = axisMaximum - ratio * axisSpan;
+      if (Math.abs(value) < axisSpan / 1000) return "";
       return `
         <line class="grid" x1="${left}" x2="${width - right}" y1="${y}" y2="${y}" />
         <text class="tick-label" x="${left - 9}" y="${y + 4}" text-anchor="end">${escapeHtml(formatPower(value, locale))}</text>`;
@@ -699,57 +766,63 @@ class SmaSunnyPortalEnergyCard extends HTMLElement {
       const timestamp = startTime + (endTime - startTime) * ratio;
       const x = left + plotWidth * ratio;
       return `
-        <line class="grid" x1="${x}" x2="${x}" y1="${mainTop}" y2="${balanceTop + balanceHeight}" />
-        <text class="tick-label" x="${x}" y="${chartBottom}" text-anchor="middle">${escapeHtml(formatTime(timestamp, timezone, locale))}</text>`;
+        <line class="grid" x1="${x}" x2="${x}" y1="${chartTop}" y2="${chartBottom}" />
+        <text class="tick-label" x="${x}" y="${timeLabelY}" text-anchor="middle">${escapeHtml(formatTime(timestamp, timezone, locale))}</text>`;
     }).join("");
     const now = Date.now();
     const nowLine =
       now >= startTime && now < endTime
-        ? `<line class="now-line" x1="${xFor(now)}" x2="${xFor(now)}" y1="${mainTop}" y2="${balanceTop + balanceHeight}" />`
+        ? `<line class="now-line" x1="${xFor(now)}" x2="${xFor(now)}" y1="${chartTop}" y2="${chartBottom}" />`
         : "";
     const noData = measurements.length === 0 && predictions.length === 0;
     const missingForecast = measurements.length > 0 && predictions.length === 0;
+    const legendButton = (key, style, lineStyle, text) => {
+      const visible = this._visibleSeries.has(key);
+      return `
+        <button class="legend-item ${style}" type="button" data-series="${key}" aria-pressed="${visible}">
+          <span class="legend-check" aria-hidden="true">${visible ? "✓" : ""}</span>
+          <span class="legend-line ${lineStyle}" aria-hidden="true"></span>
+          <span>${escapeHtml(text)}</span>
+        </button>`;
+    };
 
     return `
       ${this._renderMetrics(measurements, predictions, labels, timezone, locale)}
       <div class="chart-wrap">
         <div class="tooltip" role="status"></div>
-        <svg viewBox="0 0 ${width} 470" role="img" aria-label="${escapeHtml(labels.power)}">
+        <svg viewBox="0 0 ${width} 400" role="img" aria-label="${escapeHtml(labels.power)}">
           <text class="axis-label" x="${left}" y="20">${escapeHtml(labels.power)}</text>
           ${horizontalGrid}
           ${verticalGrid}
-          <line class="zero-line" x1="${left}" x2="${width - right}" y1="${balanceMid}" y2="${balanceMid}" />
-          <text class="axis-label" x="${left}" y="${balanceTop - 13}">${escapeHtml(labels.balance)}</text>
-          <text class="tick-label" x="${left - 9}" y="${balanceTop + 4}" text-anchor="end">${escapeHtml(formatPower(balanceMaximum, locale, true))}</text>
-          <text class="tick-label" x="${left - 9}" y="${balanceMid + 4}" text-anchor="end">0 W</text>
-          <text class="tick-label" x="${left - 9}" y="${balanceTop + balanceHeight + 4}" text-anchor="end">${escapeHtml(formatPower(-balanceMaximum, locale, true))}</text>
-          ${actualPvPath ? `<path class="line actual-pv" d="${actualPvPath}" />` : ""}
-          ${actualConsumptionPath ? `<path class="line actual-consumption" d="${actualConsumptionPath}" />` : ""}
-          ${forecastPvPath ? `<path class="line forecast-line forecast-pv" d="${forecastPvPath}" />` : ""}
-          ${forecastConsumptionPath ? `<path class="line forecast-line forecast-consumption" d="${forecastConsumptionPath}" />` : ""}
-          ${actualPositivePath ? `<path class="line positive" d="${actualPositivePath}" />` : ""}
-          ${actualNegativePath ? `<path class="line negative" d="${actualNegativePath}" />` : ""}
-          ${forecastPositivePath ? `<path class="line forecast-line positive" d="${forecastPositivePath}" />` : ""}
-          ${forecastNegativePath ? `<path class="line forecast-line negative" d="${forecastNegativePath}" />` : ""}
+          <line class="zero-line" x1="${left}" x2="${width - right}" y1="${zeroY}" y2="${zeroY}" />
+          <text class="tick-label" x="${left - 9}" y="${zeroY + 4}" text-anchor="end">0 W</text>
+          ${this._visibleSeries.has("surplus") && actualPositivePath ? `<path class="line positive" data-series-path="surplus" d="${actualPositivePath}" />` : ""}
+          ${this._visibleSeries.has("deficit") && actualNegativePath ? `<path class="line negative" data-series-path="deficit" d="${actualNegativePath}" />` : ""}
+          ${this._visibleSeries.has("surplus") && forecastPositivePath ? `<path class="line forecast-line positive" data-series-path="surplus" d="${forecastPositivePath}" />` : ""}
+          ${this._visibleSeries.has("deficit") && forecastNegativePath ? `<path class="line forecast-line negative" data-series-path="deficit" d="${forecastNegativePath}" />` : ""}
+          ${this._visibleSeries.has("actual_pv") && actualPvPath ? `<path class="line actual-pv" data-series-path="actual_pv" d="${actualPvPath}" />` : ""}
+          ${this._visibleSeries.has("actual_consumption") && actualConsumptionPath ? `<path class="line actual-consumption" data-series-path="actual_consumption" d="${actualConsumptionPath}" />` : ""}
+          ${this._visibleSeries.has("forecast_pv") && forecastPvPath ? `<path class="line forecast-line forecast-pv" data-series-path="forecast_pv" d="${forecastPvPath}" />` : ""}
+          ${this._visibleSeries.has("forecast_consumption") && forecastConsumptionPath ? `<path class="line forecast-line forecast-consumption" data-series-path="forecast_consumption" d="${forecastConsumptionPath}" />` : ""}
           ${nowLine}
-          <line class="hover-line" x1="0" x2="0" y1="${mainTop}" y2="${balanceTop + balanceHeight}" visibility="hidden" />
-          <rect class="hit-area" x="${left}" y="${mainTop}" width="${plotWidth}" height="${balanceTop + balanceHeight - mainTop}" />
+          <line class="hover-line" x1="0" x2="0" y1="${chartTop}" y2="${chartBottom}" visibility="hidden" />
+          <rect class="hit-area" x="${left}" y="${chartTop}" width="${plotWidth}" height="${chartHeight}" />
           ${
             noData
-              ? `<text class="axis-label" x="${left + plotWidth / 2}" y="${mainTop + mainHeight / 2}" text-anchor="middle">${escapeHtml(labels.noData)}</text>`
+              ? `<text class="axis-label" x="${left + plotWidth / 2}" y="${chartTop + chartHeight / 2}" text-anchor="middle">${escapeHtml(labels.noData)}</text>`
               : missingForecast
-                ? `<text class="tick-label" x="${left + plotWidth / 2}" y="${mainTop + 20}" text-anchor="middle">${escapeHtml(labels.noForecast)}</text>`
+                ? `<text class="tick-label" x="${left + plotWidth / 2}" y="${chartTop + 20}" text-anchor="middle">${escapeHtml(labels.noForecast)}</text>`
                 : ""
           }
         </svg>
       </div>
       <div class="legend">
-        <span class="legend-item"><span class="legend-line pv"></span>${escapeHtml(labels.actual)} ${escapeHtml(labels.pv)}</span>
-        <span class="legend-item"><span class="legend-line dashed pv"></span>${escapeHtml(labels.forecast)} ${escapeHtml(labels.pv)}</span>
-        <span class="legend-item"><span class="legend-line consumption"></span>${escapeHtml(labels.actual)} ${escapeHtml(labels.consumption)}</span>
-        <span class="legend-item"><span class="legend-line dashed consumption"></span>${escapeHtml(labels.forecast)} ${escapeHtml(labels.consumption)}</span>
-        <span class="legend-item"><span class="legend-line surplus"></span>${escapeHtml(labels.surplus)}</span>
-        <span class="legend-item"><span class="legend-line deficit"></span>${escapeHtml(labels.deficit)}</span>
+        ${legendButton("actual_pv", "pv-actual", "", `${labels.actual} ${labels.pv}`)}
+        ${legendButton("forecast_pv", "pv-forecast", "dashed", `${labels.forecast} ${labels.pv}`)}
+        ${legendButton("actual_consumption", "consumption-actual", "", `${labels.actual} ${labels.consumption}`)}
+        ${legendButton("forecast_consumption", "consumption-forecast", "dashed", `${labels.forecast} ${labels.consumption}`)}
+        ${legendButton("surplus", "surplus", "", labels.surplus)}
+        ${legendButton("deficit", "deficit", "", labels.deficit)}
       </div>`;
   }
 
@@ -827,6 +900,7 @@ class SmaSunnyPortalEnergyCard extends HTMLElement {
         </div>
       </ha-card>`;
     this._bindControls();
+    this._bindLegend();
     this._bindChart();
   }
 
@@ -849,6 +923,18 @@ class SmaSunnyPortalEnergyCard extends HTMLElement {
       this._mode = event.target.value;
       this._load();
     });
+  }
+
+  _bindLegend() {
+    for (const button of this.shadowRoot.querySelectorAll(".legend-item[data-series]")) {
+      button.addEventListener("click", () => {
+        const key = button.dataset.series;
+        if (!SERIES_KEYS.includes(key)) return;
+        if (this._visibleSeries.has(key)) this._visibleSeries.delete(key);
+        else this._visibleSeries.add(key);
+        this._render();
+      });
+    }
   }
 
   _bindChart() {
@@ -880,15 +966,30 @@ class SmaSunnyPortalEnergyCard extends HTMLElement {
       const reference = actual ?? forecast;
       const rows = [];
       if (actual) {
-        rows.push(`<div class="tooltip-row"><span>${escapeHtml(labels.actual)} ${escapeHtml(labels.pv)}</span><strong>${escapeHtml(formatPower(actual.pv_generation_w, locale))}</strong></div>`);
-        rows.push(`<div class="tooltip-row"><span>${escapeHtml(labels.actual)} ${escapeHtml(labels.consumption)}</span><strong>${escapeHtml(formatPower(actual.total_consumption_w, locale))}</strong></div>`);
-        rows.push(`<div class="tooltip-row"><span>${escapeHtml(labels.surplus)}</span><strong>${escapeHtml(formatPower(actual.surplus_w, locale, true))}</strong></div>`);
+        if (this._visibleSeries.has("actual_pv")) {
+          rows.push(`<div class="tooltip-row"><span>${escapeHtml(labels.actual)} ${escapeHtml(labels.pv)}</span><strong>${escapeHtml(formatPower(actual.pv_generation_w, locale))}</strong></div>`);
+        }
+        if (this._visibleSeries.has("actual_consumption")) {
+          rows.push(`<div class="tooltip-row"><span>${escapeHtml(labels.actual)} ${escapeHtml(labels.consumption)}</span><strong>${escapeHtml(formatPower(actual.total_consumption_w, locale))}</strong></div>`);
+        }
+        const actualBalanceKey = Number(actual.surplus_w) >= 0 ? "surplus" : "deficit";
+        if (this._visibleSeries.has(actualBalanceKey)) {
+          rows.push(`<div class="tooltip-row"><span>${escapeHtml(labels.actual)} ${escapeHtml(labels[actualBalanceKey])}</span><strong>${escapeHtml(formatPower(actual.surplus_w, locale, true))}</strong></div>`);
+        }
       }
       if (forecast) {
-        rows.push(`<div class="tooltip-row"><span>${escapeHtml(labels.forecast)} ${escapeHtml(labels.pv)}</span><strong>${escapeHtml(formatPower(forecast.pv_generation_w, locale))}</strong></div>`);
-        rows.push(`<div class="tooltip-row"><span>${escapeHtml(labels.forecast)} ${escapeHtml(labels.consumption)}</span><strong>${escapeHtml(formatPower(forecast.total_consumption_w, locale))}</strong></div>`);
-        rows.push(`<div class="tooltip-row"><span>${escapeHtml(labels.forecast)} ${escapeHtml(labels.surplus)}</span><strong>${escapeHtml(formatPower(forecast.surplus_w, locale, true))}</strong></div>`);
+        if (this._visibleSeries.has("forecast_pv")) {
+          rows.push(`<div class="tooltip-row"><span>${escapeHtml(labels.forecast)} ${escapeHtml(labels.pv)}</span><strong>${escapeHtml(formatPower(forecast.pv_generation_w, locale))}</strong></div>`);
+        }
+        if (this._visibleSeries.has("forecast_consumption")) {
+          rows.push(`<div class="tooltip-row"><span>${escapeHtml(labels.forecast)} ${escapeHtml(labels.consumption)}</span><strong>${escapeHtml(formatPower(forecast.total_consumption_w, locale))}</strong></div>`);
+        }
+        const forecastBalanceKey = Number(forecast.surplus_w) >= 0 ? "surplus" : "deficit";
+        if (this._visibleSeries.has(forecastBalanceKey)) {
+          rows.push(`<div class="tooltip-row"><span>${escapeHtml(labels.forecast)} ${escapeHtml(labels[forecastBalanceKey])}</span><strong>${escapeHtml(formatPower(forecast.surplus_w, locale, true))}</strong></div>`);
+        }
       }
+      if (rows.length === 0) return;
       tooltip.innerHTML = `<div class="tooltip-title">${escapeHtml(formatDateTime(reference.time_utc, timezone, locale))}</div>${rows.join("")}`;
       tooltip.classList.add("visible");
       hoverLine.setAttribute("x1", boundedX);
@@ -1018,14 +1119,6 @@ class SmaSunnyPortalEnergyCardEditor extends HTMLElement {
   }
 }
 
-if (!customElements.get(EDITOR_TAG)) {
-  customElements.define(EDITOR_TAG, SmaSunnyPortalEnergyCardEditor);
-}
-
-if (!customElements.get(CARD_TAG)) {
-  customElements.define(CARD_TAG, SmaSunnyPortalEnergyCard);
-}
-
 globalThis.customCards = globalThis.customCards ?? [];
 if (!globalThis.customCards.some((card) => card.type === CARD_TAG)) {
   globalThis.customCards.push({
@@ -1035,3 +1128,26 @@ if (!globalThis.customCards.some((card) => card.type === CARD_TAG)) {
     preview: false,
   });
 }
+
+const registerCustomElements = () => {
+  const registry = globalThis.customElements;
+  if (!registry?.get(HA_ROOT_TAG)) return false;
+  if (!registry.get(EDITOR_TAG)) {
+    registry.define(EDITOR_TAG, SmaSunnyPortalEnergyCardEditor);
+  }
+  if (!registry.get(CARD_TAG)) {
+    registry.define(CARD_TAG, SmaSunnyPortalEnergyCard);
+  }
+  return true;
+};
+
+const registerCustomElementsWhenReady = (attempt = 0) => {
+  if (registerCustomElements()) return;
+  if (attempt >= 1200) {
+    console.error("SMA Energy Live could not find the Home Assistant custom-element registry");
+    return;
+  }
+  globalThis.setTimeout(() => registerCustomElementsWhenReady(attempt + 1), 25);
+};
+
+registerCustomElementsWhenReady();
