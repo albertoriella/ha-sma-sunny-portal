@@ -11,6 +11,7 @@ from homeassistant.components import websocket_api
 from homeassistant.components.websocket_api import ActiveConnection
 from homeassistant.core import HomeAssistant
 
+from .accuracy import AccuracySeries, ForecastAccuracy, calculate_forecast_accuracy
 from .const import DOMAIN
 from .errors import SmaSunnyPortalHistoryError
 from .history import FORECAST_HISTORY_MODES, ForecastHistoryMode
@@ -31,6 +32,40 @@ def _parse_iso_date(value: str) -> date | None:
 def _serialize_timestamp(value: datetime | None) -> str | None:
     """Serialize one aware timestamp for the Home Assistant frontend."""
     return value.isoformat() if value is not None else None
+
+
+def _serialize_accuracy_series(
+    value: AccuracySeries | None,
+) -> dict[str, float | None] | None:
+    """Serialize one optional group of forecast-quality metrics."""
+    if value is None:
+        return None
+    return {
+        "actual_energy_wh": value.actual_energy_wh,
+        "forecast_energy_wh": value.forecast_energy_wh,
+        "energy_error_wh": value.energy_error_wh,
+        "energy_error_percent": value.energy_error_percent,
+        "mae_w": value.mae_w,
+        "rmse_w": value.rmse_w,
+        "bias_w": value.bias_w,
+        "wape_percent": value.wape_percent,
+    }
+
+
+def _serialize_accuracy(value: ForecastAccuracy) -> dict[str, Any]:
+    """Serialize forecast coverage and accuracy without exposing raw storage."""
+    return {
+        "interval_seconds": value.interval_seconds,
+        "measurement_points": value.measurement_points,
+        "forecast_points": value.forecast_points,
+        "eligible_points": value.eligible_points,
+        "matched_points": value.matched_points,
+        "coverage_percent": value.coverage_percent,
+        "first_matched_utc": _serialize_timestamp(value.first_matched_utc),
+        "last_matched_utc": _serialize_timestamp(value.last_matched_utc),
+        "pv_generation": _serialize_accuracy_series(value.pv_generation),
+        "total_consumption": _serialize_accuracy_series(value.total_consumption),
+    }
 
 
 @websocket_api.websocket_command(
@@ -102,6 +137,8 @@ async def websocket_get_history(
         )
         return
 
+    accuracy = calculate_forecast_accuracy(archived_day)
+
     connection.send_result(
         msg["id"],
         {
@@ -138,6 +175,7 @@ async def websocket_get_history(
                 }
                 for item in archived_day.predictions
             ],
+            "accuracy": _serialize_accuracy(accuracy),
         },
     )
 

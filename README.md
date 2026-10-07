@@ -61,11 +61,16 @@ these modes:
 - `rolling`: newest vintage issued before each individual target interval.
 
 The command returns measured and predicted PV, consumption, and surplus power,
-plus forecast issue timestamps and archive availability bounds. It is intended
-for the integration's own optional frontend card and other authenticated Home
-Assistant frontends; it is not a public SMA endpoint. `day_ahead` deliberately
-returns no curve when the archive has no pre-midnight vintage, as happens on the
-first archive day, instead of substituting a hindsight forecast.
+plus forecast issue timestamps, archive availability bounds, and compact
+accuracy metrics for forecast points whose exact target timestamp already has a
+measurement. The metrics include comparison coverage, energy error, bias, MAE,
+RMSE, and WAPE for photovoltaic generation and total consumption. Future points
+are not counted as missing, and percentage errors remain null when the measured
+energy is zero. The command is intended for the integration's own optional
+frontend card and other authenticated Home Assistant frontends; it is not a
+public SMA endpoint. `day_ahead` deliberately returns no curve when the archive
+has no pre-midnight vintage, as happens on the first archive day, instead of
+substituting a hindsight forecast.
 
 ## Optional Energy Live card
 

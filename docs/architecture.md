@@ -117,9 +117,10 @@ The first card view will use either the last day-ahead vintage available before
 local midnight or a rolling forecast assembled from the newest vintage that
 predated each target interval. Keeping `issued_at` separate from `valid_at`
 allows both views without rewriting history. Compact aggregate metrics such as
-bias, MAE, and RMSE can later be retained longer and exposed as diagnostics or
-Home Assistant statistics. This provider-neutral boundary also permits a future
-ensemble forecaster without coupling its learning logic to the SMA transport.
+bias, MAE, RMSE, and WAPE are computed on demand for the bounded history API;
+they can later be retained longer and exposed as diagnostics or Home Assistant
+statistics. This provider-neutral boundary also permits a future ensemble
+forecaster without coupling its learning logic to the SMA transport.
 
 ## Private history read API
 
@@ -147,6 +148,17 @@ Archive-wide first/last availability bounds allow the future card to constrain
 calendar navigation. Empty dates return empty arrays rather than fabricated
 zeroes. Storage errors use fixed public error codes and never expose database
 paths, credentials, plant telemetry, or exception text.
+
+The response also calculates provider-neutral quality metrics without adding a
+second persistence format. A prediction is eligible only after its target time
+is covered by the measurement series, and it is matched only to a measurement
+with the exact same UTC timestamp. This is appropriate for SMA's five-minute
+measurements and quarter-hour predictions and avoids interpolation or hindsight.
+The matched quarter-hour points produce compared actual and forecast energy,
+signed energy error, signed power bias, MAE, RMSE, and WAPE. MAPE is deliberately
+omitted because night-time photovoltaic values make pointwise percentages
+unstable. Percentage metrics are null when their measured denominator is zero,
+and future forecast points do not reduce coverage.
 
 The command is available to authenticated Home Assistant users, matching normal
 entity-history visibility. It performs bounded, read-only queries in an

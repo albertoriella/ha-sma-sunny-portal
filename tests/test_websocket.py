@@ -222,6 +222,81 @@ def test_history_command_serializes_curves_and_dst_day(
             "surplus_w": 500,
         }
     ]
+    assert result["accuracy"] == {
+        "interval_seconds": 900,
+        "measurement_points": 1,
+        "forecast_points": 1,
+        "eligible_points": 0,
+        "matched_points": 0,
+        "coverage_percent": None,
+        "first_matched_utc": None,
+        "last_matched_utc": None,
+        "pv_generation": None,
+        "total_consumption": None,
+    }
+
+
+def test_history_command_serializes_accuracy_metrics(
+    websocket_module: ModuleType,
+) -> None:
+    """Matched actual and forecast points include compact quality metrics."""
+    target = datetime(2026, 10, 25, 10, tzinfo=UTC)
+    store = FakeHistoryStore(
+        ArchivedDay(
+            measurements=(ArchivedMeasurement(target, 900, 650),),
+            predictions=(
+                ArchivedPrediction(
+                    target,
+                    datetime(2026, 10, 24, 21, tzinfo=UTC),
+                    1200,
+                    700,
+                ),
+            ),
+            first_available_utc=target,
+            last_available_utc=target,
+        )
+    )
+    connection = FakeConnection()
+
+    asyncio.run(
+        websocket_module.websocket_get_history(
+            FakeHass(store),
+            connection,
+            {
+                "id": 13,
+                "config_entry_id": "synthetic-entry",
+                "date": "2026-10-25",
+                "mode": "day_ahead",
+            },
+        )
+    )
+
+    accuracy = connection.results[0][1]["accuracy"]
+    assert accuracy["eligible_points"] == 1
+    assert accuracy["matched_points"] == 1
+    assert accuracy["coverage_percent"] == 100
+    assert accuracy["first_matched_utc"] == "2026-10-25T10:00:00+00:00"
+    assert accuracy["last_matched_utc"] == "2026-10-25T10:00:00+00:00"
+    assert accuracy["pv_generation"] == {
+        "actual_energy_wh": 225,
+        "forecast_energy_wh": 300,
+        "energy_error_wh": 75,
+        "energy_error_percent": pytest.approx(100 / 3),
+        "mae_w": 300,
+        "rmse_w": 300,
+        "bias_w": 300,
+        "wape_percent": pytest.approx(100 / 3),
+    }
+    assert accuracy["total_consumption"] == {
+        "actual_energy_wh": 162.5,
+        "forecast_energy_wh": 175,
+        "energy_error_wh": 12.5,
+        "energy_error_percent": pytest.approx(100 / 13),
+        "mae_w": 50,
+        "rmse_w": 50,
+        "bias_w": 50,
+        "wape_percent": pytest.approx(100 / 13),
+    }
 
 
 def test_history_command_defaults_to_latest(websocket_module: ModuleType) -> None:
