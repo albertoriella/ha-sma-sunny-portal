@@ -74,13 +74,34 @@ substituting a hindsight forecast.
 
 ## Optional Energy Live card
 
-The integration ships a dependency-free custom card and registers it locally;
-no separate Lovelace resource or JavaScript download is required. Its custom
-elements are registered only after Home Assistant's final scoped registry is
-available, avoiding the frontend startup race that can otherwise lose elements
-loaded through `add_extra_js_url`. After installing or updating the integration,
-restart Home Assistant and perform one hard browser refresh. Then open a
-dashboard editor, choose **Add card**, and search for **SMA Energy Live**.
+The integration ships a dependency-free custom card and serves it locally; no
+separate JavaScript download is required. When Lovelace resources use storage
+mode, the integration creates and maintains one persistent module resource
+automatically. This makes the module available before dashboards are built on
+later Home Assistant starts and avoids the timing window of runtime-only
+`add_extra_js_url` registration. Dashboard mode and resource mode are separate:
+a YAML dashboard can still use storage-managed resources, which is the normal
+mixed configuration.
+
+The operation is idempotent: unrelated resources are preserved, an existing SMA
+resource is updated when its version changes, and duplicate resources pointing
+to the integration's private static path are consolidated. If resources are
+explicitly managed in YAML, Home Assistant exposes them as read-only; the
+integration then retains runtime registration as a compatibility fallback. For
+deterministic loading in that uncommon mode, add this module to the YAML
+resource list:
+
+```yaml
+resources:
+  - url: /sma_sunny_portal/frontend/sma-sunny-portal-energy-card.js?v=2
+    type: module
+```
+
+The module also waits for Home Assistant's final scoped custom-element registry
+before defining the card and editor. After the first installation or an update,
+restart Home Assistant and perform one hard browser refresh. Subsequent ordinary
+restarts do not require another hard refresh. Open a dashboard editor, choose
+**Add card**, and search for **SMA Energy Live**.
 
 When exactly one SMA config entry exists, the empty card configuration is
 enough:

@@ -168,14 +168,28 @@ a downloadable asset.
 ## Optional Energy Live frontend
 
 The integration serves one dependency-free JavaScript module from its own
-component directory and registers it through Home Assistant's frontend and
-static-path APIs. It does not use a CDN, iframe, remote script, custom panel, or
-dashboard strategy. The regular Lovelace custom-card boundary keeps the feature
-optional and lets standard Masonry and Sections views own card lifecycle and
-layout. The module waits until the final Home Assistant custom-element registry
-contains the root application element before defining the card and editor. This
-avoids losing the definitions if the scoped-registry polyfill replaces the
-browser's native registry after an extra frontend module has already executed.
+component directory through Home Assistant's static-path API. It does not use a
+CDN, iframe, remote script, custom panel, or dashboard strategy. The regular
+Lovelace custom-card boundary keeps the feature optional and lets standard
+Masonry and Sections views own card lifecycle and layout.
+
+In Lovelace storage-resource mode, setup reconciles one persistent module
+resource for the integration-owned static URL. It first invokes the collection's
+public information method to force lazy storage loading, then creates, updates,
+or de-duplicates only resources whose parsed URL path exactly matches that
+private endpoint. All unrelated resources remain untouched. This persistent
+registration lets the frontend discover the module while it constructs a
+dashboard, including immediately after later Home Assistant restarts. YAML
+resource mode is read-only, so it falls back to `add_extra_js_url`; users of
+that uncommon mode can declare the same module URL in YAML for deterministic
+startup.
+
+The module waits until the final Home Assistant custom-element registry contains
+the root application element before defining the card and editor. This remains
+necessary because the scoped-registry polyfill can replace the browser's native
+registry after an early module has executed. Persistent resource discovery and
+delayed custom-element definition address the two separate halves of that
+startup race.
 
 `SMA Energy Live` calls only the authenticated WebSocket commands registered by
 the integration. A small `sma_sunny_portal/entries` command exposes config-entry
