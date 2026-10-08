@@ -1,0 +1,73 @@
+name: Bug report
+description: Report a reproducible integration or card problem
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Never paste access or refresh tokens, cookies, authorization headers,
+        HAR files, raw Sunny Portal responses, plant/account/component IDs,
+        coordinates, or personal telemetry. Use private vulnerability reporting
+        for security issues.
+
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed credentials, private identifiers, and personal telemetry.
+          required: true
+
+  - type: input
+    id: home_assistant_version
+    attributes:
+      label: Home Assistant version
+      placeholder: 2026.9.4
+    validations:
+      required: true
+
+  - type: input
+    id: integration_version
+    attributes:
+      label: Integration version
+      placeholder: 0.1.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: installation_method
+    attributes:
+      label: Installation method
+      options:
+        - HACS custom repository
+        - Manual copy
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the expected and actual behavior.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Open ...
+        2. Select ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Minimal redacted logs
+      description: Leave blank if no safe, relevant log excerpt is available.
+      render: text

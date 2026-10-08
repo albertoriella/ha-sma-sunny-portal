@@ -2,12 +2,18 @@
 
 ## Scope
 
-The integration will represent one SMA account as one Home Assistant config
-entry. A single account-scoped authentication manager will serve all selected
-plants so that rotating refresh tokens can never be consumed concurrently by
-separate entries.
+Version 0.1 represents one SMA account and one selected plant as one Home
+Assistant config entry. The validated account subject is the entry's unique ID,
+so the same account cannot currently create a second entry for another plant.
+Different SMA accounts can create independent entries.
 
-The first supported data set is expected to include:
+Multi-plant discovery should evolve the existing account entry to own several
+selected plants, rather than create competing entries that consume the same
+rotating refresh-token chain. Home Assistant config subentries are a likely UI
+model, but that decision remains separate from the normalized data and entity
+identity contracts.
+
+The first supported data set includes:
 
 - recent measured photovoltaic generation and total consumption;
 - quarter-hour photovoltaic and consumption forecasts;
@@ -16,7 +22,7 @@ The first supported data set is expected to include:
 
 ## Backend boundary
 
-Authentication and data retrieval will be hidden behind an internal backend
+Authentication and data retrieval are hidden behind an internal backend
 interface:
 
 - `portal_ui`: experimental support for the undocumented Sunny Portal UI API;
@@ -28,15 +34,15 @@ depend directly on endpoint-specific response dictionaries.
 
 ## Authentication invariants
 
-The token manager must:
+The token manager:
 
-1. hold an account-wide asynchronous refresh lock;
-2. use only the newest known refresh token;
-3. validate the complete token response;
-4. persist the rotated refresh token atomically;
-5. expose the short-lived access token only in memory;
-6. never include either token in logs or diagnostics;
-7. convert terminal authentication failures into a Home Assistant reauth flow.
+1. holds an account-wide asynchronous refresh lock;
+2. uses only the newest known refresh token;
+3. validates the complete token response;
+4. persists the rotated refresh token atomically;
+5. exposes the short-lived access token only in memory;
+6. never includes either token in logs or diagnostics;
+7. converts terminal authentication failures into a Home Assistant reauth flow.
 
 The long-lived refresh token is stored in a private, config-entry-scoped Home
 Assistant `Store` using immediate atomic writes. A bootstrap token may briefly
@@ -113,7 +119,7 @@ database is config-entry scoped, created with mode `0600`, contains no tokens,
 and is deleted with the config entry. A history-write failure is logged without
 taking live sensors offline.
 
-The first card view will use either the last day-ahead vintage available before
+The card can use either the last day-ahead vintage available before
 local midnight or a rolling forecast assembled from the newest vintage that
 predated each target interval. Keeping `issued_at` separate from `valid_at`
 allows both views without rewriting history. Compact aggregate metrics such as
