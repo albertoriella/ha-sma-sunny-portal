@@ -202,10 +202,22 @@ The card displays one bounded local day at a time and uses the UTC boundaries
 returned by the backend, so 23- and 25-hour daylight-saving days retain their
 true duration. Measured and forecast PV, consumption, surplus, and deficit use
 one shared power axis and one physical zero; deficit is the only negative
-series. A clickable accessible legend controls each logical series, initially
+series. Color identifies the physical quantity while line style identifies its
+provenance: real and forecast PV share Home Assistant's Energy solar orange,
+real and forecast consumption share the theme's neutral text color, deficit
+uses the Energy grid-consumption blue, and surplus uses the Energy grid-return
+purple. A clickable accessible legend controls each logical series, initially
 with all six enabled, and the scale follows the visible series. Forecast mode
 selection is an explicit user control; the UI never substitutes one provenance
 mode for another.
+
+An expandable quality panel renders the bounded accuracy object returned with
+the same history response. It shows matched/eligible coverage and the exact
+comparison interval before presenting actual and forecast energy, signed
+energy difference, WAPE, MAE, RMSE, and bias separately for photovoltaic
+generation and total consumption. Current-day results are marked partial;
+future targets and zero-denominator percentages keep the backend's null-safe
+semantics instead of being displayed as failures or zero error.
 
 The integration deliberately does not create, mutate, or delete a user's
 Lovelace dashboard. Automatic whole-dashboard installation is difficult to

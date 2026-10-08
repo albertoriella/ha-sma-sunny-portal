@@ -13,7 +13,7 @@ from typing import Any
 import pytest
 
 MODULE_NAME = "custom_components.sma_sunny_portal.frontend"
-CARD_URL = "/sma_sunny_portal/frontend/sma-sunny-portal-energy-card.js?v=2"
+CARD_URL = "/sma_sunny_portal/frontend/sma-sunny-portal-energy-card.js?v=3"
 CARD_PATH = "/sma_sunny_portal/frontend/sma-sunny-portal-energy-card.js"
 
 
@@ -329,6 +329,18 @@ def test_frontend_asset_has_no_external_runtime_dependencies() -> None:
     assert 'data-series="${key}"' in asset
     assert "this._visibleSeries = new Set(SERIES_KEYS)" in asset
     assert "const zeroY = yFor(0)" in asset
+    assert "_renderAccuracy(data, labels, timezone, locale)" in asset
+    assert "--sma-solar-color: var(--energy-solar-color, #ff9800)" in asset
+    assert (
+        "--sma-grid-import-color: var(--energy-grid-consumption-color, #488fc2)"
+        in asset
+    )
+    assert "--sma-grid-export-color: var(--energy-grid-return-color, #8353d1)" in asset
+    assert ".actual-pv,\n  .forecast-pv { stroke: var(--sma-solar-color); }" in asset
+    assert (
+        ".actual-consumption,\n"
+        "  .forecast-consumption { stroke: var(--sma-consumption-color); }" in asset
+    )
     assert "balanceTop" not in asset
     assert "yBalance" not in asset
     assert '"sma_sunny_portal/history"' in asset

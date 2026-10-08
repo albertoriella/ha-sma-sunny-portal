@@ -64,6 +64,21 @@ const labels = {
   power: "Power",
   noData: "No data",
   noForecast: "No forecast",
+  accuracy: "Forecast accuracy",
+  accuracyHelp: "Matched intervals only",
+  noAccuracy: "No accuracy yet",
+  coverage: "Coverage",
+  intervals: "intervals",
+  step: "step",
+  compared: "Compared",
+  partialDay: "Partial day",
+  actualEnergy: "Actual energy",
+  forecastEnergy: "Forecast energy",
+  energyError: "Energy difference",
+  wape: "WAPE",
+  mae: "MAE",
+  rmse: "RMSE",
+  bias: "Bias",
 };
 const graphData = {
   day_start_utc: "2026-10-05T00:00:00Z",
@@ -84,11 +99,44 @@ const graphData = {
       surplus_w: -700,
     },
   ],
+  accuracy: {
+    interval_seconds: 900,
+    eligible_points: 4,
+    matched_points: 4,
+    coverage_percent: 100,
+    first_matched_utc: "2026-10-05T10:00:00Z",
+    last_matched_utc: "2026-10-05T10:45:00Z",
+    pv_generation: {
+      actual_energy_wh: 1000,
+      forecast_energy_wh: 1250,
+      energy_error_wh: 250,
+      energy_error_percent: 25,
+      mae_w: 100,
+      rmse_w: 120,
+      bias_w: 50,
+      wape_percent: 10,
+    },
+    total_consumption: {
+      actual_energy_wh: 800,
+      forecast_energy_wh: 760,
+      energy_error_wh: -40,
+      energy_error_percent: -5,
+      mae_w: 40,
+      rmse_w: 45,
+      bias_w: -20,
+      wape_percent: null,
+    },
+  },
 };
 
 const allSeriesGraph = card._renderGraph(graphData, labels, "UTC", "en");
 assert.equal((allSeriesGraph.match(/<svg\b/g) ?? []).length, 1);
 assert.equal((allSeriesGraph.match(/class="zero-line"/g) ?? []).length, 1);
+assert.match(allSeriesGraph, /Forecast accuracy/);
+assert.match(allSeriesGraph, /Coverage: 100% · 4\/4 intervals · step 15 min/);
+assert.match(allSeriesGraph, /1\.25 kWh/);
+assert.match(allSeriesGraph, /\+250 Wh \(\+25%\)/);
+assert.match(allSeriesGraph, /WAPE<\/span>\s*<strong>—<\/strong>/);
 for (const key of [
   "actual_pv",
   "forecast_pv",

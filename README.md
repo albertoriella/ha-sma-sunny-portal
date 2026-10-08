@@ -93,7 +93,7 @@ resource list:
 
 ```yaml
 resources:
-  - url: /sma_sunny_portal/frontend/sma-sunny-portal-energy-card.js?v=2
+  - url: /sma_sunny_portal/frontend/sma-sunny-portal-energy-card.js?v=3
     type: module
 ```
 
@@ -117,9 +117,15 @@ the initial forecast mode, and override the title. The card provides:
 - one shared-axis graph with a common zero for PV, consumption, surplus, and
   deficit;
 - solid measured PV and consumption curves and dashed forecast curves;
+- Home Assistant Energy colors: orange photovoltaic generation, theme-aware
+  neutral consumption, blue deficit/import, and purple surplus/export; real
+  and forecast curves for the same quantity always share a color;
 - positive surplus above zero and negative deficit below zero;
 - a clickable legend that starts with every series visible and can hide any
   series independently;
+- an expandable accuracy summary for the selected date and forecast mode,
+  including matched-interval coverage, compared actual/forecast energy,
+  signed energy difference, WAPE, MAE, RMSE, and bias for PV and consumption;
 - `latest`, `day_ahead`, and `rolling` forecast selection;
 - forecast-issue provenance and archive availability bounds;
 - English and Italian labels following the Home Assistant language.
@@ -129,6 +135,11 @@ reversible and lets each user place it in an existing Energy Live view or a new
 view without changing unrelated Lovelace configuration. Dates before archive
 installation remain empty by design. On the first archive day, `day_ahead` may
 also be empty because no pre-midnight snapshot exists yet.
+
+Accuracy values cover only quarter-hour forecast targets that already have an
+actual measurement at the exact same timestamp. The current day is explicitly
+marked as partial, future targets do not lower coverage, and percentage values
+remain unavailable when the measured-energy denominator is zero.
 
 See [the architecture notes](docs/architecture.md) for the planned design and
 security boundaries.

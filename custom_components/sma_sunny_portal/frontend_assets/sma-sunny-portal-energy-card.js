@@ -42,6 +42,23 @@ const STRINGS = {
     deficit: "Deficit",
     power: "PV, consumption, and balance power",
     balance: "Surplus and deficit",
+    accuracy: "Forecast accuracy",
+    accuracyHelp:
+      "Metrics use only forecast intervals with an actual measurement at the same timestamp.",
+    noAccuracy:
+      "Accuracy will appear when at least one forecast interval has a matching actual measurement.",
+    coverage: "Coverage",
+    intervals: "intervals",
+    step: "step",
+    compared: "Compared",
+    partialDay: "Partial day",
+    actualEnergy: "Actual energy",
+    forecastEnergy: "Forecast energy",
+    energyError: "Energy difference",
+    wape: "WAPE",
+    mae: "MAE",
+    rmse: "RMSE",
+    bias: "Bias",
     forecastIssued: "Forecast issued",
     forecastVersions: "forecast versions",
     archive: "Archive",
@@ -86,6 +103,23 @@ const STRINGS = {
     deficit: "Deficit",
     power: "Potenza FV, consumo e bilancio",
     balance: "Surplus e deficit",
+    accuracy: "Accuratezza previsioni",
+    accuracyHelp:
+      "Le metriche usano solo gli intervalli previsionali con una misura reale allo stesso istante.",
+    noAccuracy:
+      "L’accuratezza comparirà quando almeno un intervallo previsto avrà una misura reale corrispondente.",
+    coverage: "Copertura",
+    intervals: "intervalli",
+    step: "passo",
+    compared: "Confronto",
+    partialDay: "Giornata parziale",
+    actualEnergy: "Energia reale",
+    forecastEnergy: "Energia prevista",
+    energyError: "Scostamento energia",
+    wape: "WAPE",
+    mae: "MAE",
+    rmse: "RMSE",
+    bias: "Bias",
     forecastIssued: "Previsione emessa",
     forecastVersions: "versioni previsionali",
     archive: "Archivio",
@@ -169,7 +203,7 @@ const formatDateTime = (value, timeZone, locale) =>
   }).format(new Date(value));
 
 const formatPower = (value, locale, signed = false) => {
-  if (!Number.isFinite(Number(value))) return "—";
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return "—";
   const numeric = Number(value);
   const absolute = Math.abs(numeric);
   const formatter = new Intl.NumberFormat(locale, {
@@ -179,6 +213,27 @@ const formatPower = (value, locale, signed = false) => {
   return absolute >= 1000
     ? `${formatter.format(numeric / 1000)} kW`
     : `${formatter.format(numeric)} W`;
+};
+
+const formatEnergy = (value, locale, signed = false) => {
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return "—";
+  const numeric = Number(value);
+  const absolute = Math.abs(numeric);
+  const formatter = new Intl.NumberFormat(locale, {
+    maximumFractionDigits: absolute >= 1000 ? 2 : 0,
+    signDisplay: signed ? "exceptZero" : "auto",
+  });
+  return absolute >= 1000
+    ? `${formatter.format(numeric / 1000)} kWh`
+    : `${formatter.format(numeric)} Wh`;
+};
+
+const formatPercent = (value, locale, signed = false) => {
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return "—";
+  return `${new Intl.NumberFormat(locale, {
+    maximumFractionDigits: 1,
+    signDisplay: signed ? "exceptZero" : "auto",
+  }).format(Number(value))}%`;
 };
 
 const niceMaximum = (value) => {
@@ -239,6 +294,10 @@ const nearestPoint = (points, targetTime) => {
 const CARD_STYLES = `
   :host {
     display: block;
+    --sma-solar-color: var(--energy-solar-color, #ff9800);
+    --sma-consumption-color: var(--primary-text-color, #f5f5f5);
+    --sma-grid-import-color: var(--energy-grid-consumption-color, #488fc2);
+    --sma-grid-export-color: var(--energy-grid-return-color, #8353d1);
   }
   ha-card {
     overflow: hidden;
@@ -375,12 +434,12 @@ const CARD_STYLES = `
     stroke-dasharray: 8 6;
     stroke-width: 2.5;
   }
-  .actual-pv { stroke: var(--warning-color, #f2c037); }
-  .forecast-pv { stroke: #f5a623; }
-  .actual-consumption { stroke: var(--primary-color, #03a9f4); }
-  .forecast-consumption { stroke: #6574cd; }
-  .positive { stroke: var(--success-color, #43a047); }
-  .negative { stroke: var(--error-color, #db4437); }
+  .actual-pv,
+  .forecast-pv { stroke: var(--sma-solar-color); }
+  .actual-consumption,
+  .forecast-consumption { stroke: var(--sma-consumption-color); }
+  .positive { stroke: var(--sma-grid-export-color); }
+  .negative { stroke: var(--sma-grid-import-color); }
   .zero-line { stroke: var(--secondary-text-color, #777); stroke-width: 1.2; }
   .now-line { stroke: var(--accent-color, #e91e63); stroke-dasharray: 3 5; }
   .hover-line { stroke: var(--primary-text-color, #222); stroke-width: 1; }
@@ -416,7 +475,7 @@ const CARD_STYLES = `
     background: var(--series-color);
     border: 2px solid var(--series-color);
     border-radius: 50%;
-    color: #fff;
+    color: var(--card-background-color, #fff);
     display: inline-flex;
     font-size: 10px;
     font-weight: 700;
@@ -437,12 +496,82 @@ const CARD_STYLES = `
     width: 22px;
   }
   .legend-line.dashed { border-top-style: dashed; }
-  .legend-item.pv-actual { --series-color: var(--warning-color, #f2c037); }
-  .legend-item.pv-forecast { --series-color: #f5a623; }
-  .legend-item.consumption-actual { --series-color: var(--primary-color, #03a9f4); }
-  .legend-item.consumption-forecast { --series-color: #6574cd; }
-  .legend-item.surplus { --series-color: var(--success-color, #43a047); }
-  .legend-item.deficit { --series-color: var(--error-color, #db4437); }
+  .legend-item.pv-actual,
+  .legend-item.pv-forecast { --series-color: var(--sma-solar-color); }
+  .legend-item.consumption-actual,
+  .legend-item.consumption-forecast { --series-color: var(--sma-consumption-color); }
+  .legend-item.surplus { --series-color: var(--sma-grid-export-color); }
+  .legend-item.deficit { --series-color: var(--sma-grid-import-color); }
+  .accuracy {
+    border-top: 1px solid var(--divider-color, #d8d8d8);
+    margin-top: 14px;
+    padding-top: 11px;
+  }
+  .accuracy summary {
+    align-items: center;
+    color: var(--primary-text-color);
+    cursor: pointer;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.92rem;
+    font-weight: 600;
+    gap: 8px 12px;
+    justify-content: space-between;
+    list-style-position: inside;
+  }
+  .accuracy-coverage {
+    color: var(--secondary-text-color);
+    font-size: 0.74rem;
+    font-weight: 400;
+  }
+  .accuracy-body {
+    margin-top: 10px;
+  }
+  .accuracy-note,
+  .accuracy-empty {
+    color: var(--secondary-text-color);
+    font-size: 0.72rem;
+    line-height: 1.4;
+  }
+  .accuracy-empty {
+    padding: 5px 0;
+  }
+  .accuracy-grid {
+    display: grid;
+    gap: 9px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 8px;
+  }
+  .accuracy-series {
+    background: color-mix(in srgb, var(--secondary-background-color) 55%, transparent);
+    border-left: 4px solid var(--series-color);
+    border-radius: 9px;
+    min-width: 0;
+    padding: 9px 11px;
+  }
+  .accuracy-series.pv { --series-color: var(--sma-solar-color); }
+  .accuracy-series.consumption { --series-color: var(--sma-consumption-color); }
+  .accuracy-series-title {
+    color: var(--primary-text-color);
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .accuracy-row {
+    align-items: baseline;
+    display: grid;
+    font-size: 0.72rem;
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 2px 0;
+  }
+  .accuracy-row span { color: var(--secondary-text-color); }
+  .accuracy-row strong {
+    color: var(--primary-text-color);
+    font-weight: 500;
+    text-align: right;
+    white-space: nowrap;
+  }
   .tooltip {
     background: color-mix(in srgb, var(--card-background-color, #fff) 94%, transparent);
     border: 1px solid var(--divider-color, #d8d8d8);
@@ -497,6 +626,7 @@ const CARD_STYLES = `
     .controls .refresh { grid-column: 4; grid-row: 2; }
     .metrics { grid-template-columns: repeat(3, minmax(82px, 1fr)); }
     .legend { margin-left: 48px; }
+    .accuracy-grid { grid-template-columns: 1fr; }
   }
 `;
 
@@ -515,6 +645,7 @@ class SmaSunnyPortalEnergyCard extends HTMLElement {
     this._started = false;
     this._requestSequence = 0;
     this._visibleSeries = new Set(SERIES_KEYS);
+    this._accuracyExpanded = true;
   }
 
   static getConfigElement() {
@@ -549,15 +680,15 @@ class SmaSunnyPortalEnergyCard extends HTMLElement {
   }
 
   getCardSize() {
-    return 8;
+    return 12;
   }
 
   getGridOptions() {
     return {
       columns: 12,
-      rows: 8,
+      rows: 12,
       min_columns: 6,
-      min_rows: 5,
+      min_rows: 7,
     };
   }
 
@@ -650,6 +781,85 @@ class SmaSunnyPortalEnergyCard extends HTMLElement {
         ${metric(`${labels.forecast} ${labels.consumption}`, formatPower(forecast?.total_consumption_w, locale), forecast)}
         ${metric(`${labels.forecast} ${labels.surplus}`, formatPower(forecast?.surplus_w, locale, true), forecast)}
       </div>`;
+  }
+
+  _renderAccuracy(data, labels, timezone, locale) {
+    const accuracy = data?.accuracy;
+    if (!accuracy) return "";
+
+    const matched = Number.isFinite(Number(accuracy.matched_points))
+      ? Number(accuracy.matched_points)
+      : 0;
+    const eligible = Number.isFinite(Number(accuracy.eligible_points))
+      ? Number(accuracy.eligible_points)
+      : 0;
+    const intervalMinutes = Number(accuracy.interval_seconds) / 60;
+    const coverage = formatPercent(accuracy.coverage_percent, locale);
+    const interval = Number.isFinite(intervalMinutes)
+      ? `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(intervalMinutes)} min`
+      : "—";
+    const coverageText = `${labels.coverage}: ${coverage} · ${matched}/${eligible} ${labels.intervals} · ${labels.step} ${interval}`;
+    const firstMatched = accuracy.first_matched_utc;
+    const lastMatched = accuracy.last_matched_utc;
+    const comparedRange =
+      firstMatched && lastMatched
+        ? `${labels.compared}: ${formatTime(firstMatched, timezone, locale)}–${formatTime(lastMatched, timezone, locale)}`
+        : "";
+    const dayEnd = Date.parse(data.day_end_utc);
+    const partialDay = matched > 0 && Number.isFinite(dayEnd) && Date.now() < dayEnd;
+    const comparisonNote = [comparedRange, partialDay ? labels.partialDay : ""]
+      .filter(Boolean)
+      .join(" · ");
+
+    const row = (name, value) => `
+      <div class="accuracy-row">
+        <span>${escapeHtml(name)}</span>
+        <strong>${escapeHtml(value)}</strong>
+      </div>`;
+    const series = (style, title, values) => {
+      if (!values) return "";
+      const energyPercent = formatPercent(values.energy_error_percent, locale, true);
+      const energyError = [
+        formatEnergy(values.energy_error_wh, locale, true),
+        energyPercent === "—" ? "" : `(${energyPercent})`,
+      ]
+        .filter(Boolean)
+        .join(" ");
+      return `
+        <section class="accuracy-series ${style}">
+          <div class="accuracy-series-title">${escapeHtml(title)}</div>
+          ${row(labels.actualEnergy, formatEnergy(values.actual_energy_wh, locale))}
+          ${row(labels.forecastEnergy, formatEnergy(values.forecast_energy_wh, locale))}
+          ${row(labels.energyError, energyError)}
+          ${row(labels.wape, formatPercent(values.wape_percent, locale))}
+          ${row(labels.mae, formatPower(values.mae_w, locale))}
+          ${row(labels.rmse, formatPower(values.rmse_w, locale))}
+          ${row(labels.bias, formatPower(values.bias_w, locale, true))}
+        </section>`;
+    };
+    const seriesCards = [
+      series("pv", labels.pv, accuracy.pv_generation),
+      series("consumption", labels.consumption, accuracy.total_consumption),
+    ]
+      .filter(Boolean)
+      .join("");
+
+    return `
+      <details class="accuracy" ${this._accuracyExpanded ? "open" : ""}>
+        <summary>
+          <span>${escapeHtml(labels.accuracy)}</span>
+          <span class="accuracy-coverage">${escapeHtml(coverageText)}</span>
+        </summary>
+        <div class="accuracy-body">
+          ${
+            seriesCards
+              ? `${comparisonNote ? `<div class="accuracy-note">${escapeHtml(comparisonNote)}</div>` : ""}
+                 <div class="accuracy-grid">${seriesCards}</div>
+                 <div class="accuracy-note">${escapeHtml(labels.accuracyHelp)}</div>`
+              : `<div class="accuracy-empty">${escapeHtml(labels.noAccuracy)}</div>`
+          }
+        </div>
+      </details>`;
   }
 
   _renderGraph(data, labels, timezone, locale) {
@@ -823,7 +1033,8 @@ class SmaSunnyPortalEnergyCard extends HTMLElement {
         ${legendButton("forecast_consumption", "consumption-forecast", "dashed", `${labels.forecast} ${labels.consumption}`)}
         ${legendButton("surplus", "surplus", "", labels.surplus)}
         ${legendButton("deficit", "deficit", "", labels.deficit)}
-      </div>`;
+      </div>
+      ${this._renderAccuracy(data, labels, timezone, locale)}`;
   }
 
   _forecastProvenance(data, labels, timezone, locale) {
@@ -901,6 +1112,7 @@ class SmaSunnyPortalEnergyCard extends HTMLElement {
       </ha-card>`;
     this._bindControls();
     this._bindLegend();
+    this._bindAccuracy();
     this._bindChart();
   }
 
@@ -935,6 +1147,12 @@ class SmaSunnyPortalEnergyCard extends HTMLElement {
         this._render();
       });
     }
+  }
+
+  _bindAccuracy() {
+    this.shadowRoot.querySelector(".accuracy")?.addEventListener("toggle", (event) => {
+      this._accuracyExpanded = event.target.open;
+    });
   }
 
   _bindChart() {

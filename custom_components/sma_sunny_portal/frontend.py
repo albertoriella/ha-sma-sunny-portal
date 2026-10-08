@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 CARD_STATIC_URL: Final = f"/{DOMAIN}/frontend/sma-sunny-portal-energy-card.js"
-CARD_ASSET_VERSION: Final = "2"
+CARD_ASSET_VERSION: Final = "3"
 CARD_MODULE_URL: Final = f"{CARD_STATIC_URL}?v={CARD_ASSET_VERSION}"
 CARD_STATIC_PATH: Final = (
     Path(__file__).parent / "frontend_assets" / "sma-sunny-portal-energy-card.js"
