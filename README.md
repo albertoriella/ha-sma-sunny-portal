@@ -9,10 +9,12 @@ by ennexOS.
 
 > [!WARNING]
 > Version 0.1 is an advanced preview. It uses an undocumented Sunny Portal UI
-> API and a manually obtained rotating refresh token. The API can change
-> without notice, and this project is not affiliated with or supported by SMA.
+> API and a manually obtained rotating refresh token. This interim access method
+> is not authorized, endorsed, or supported by SMA and may stop working or be
+> blocked without notice. Use it only with an account and plant you are
+> authorized to access, at your own risk.
 
-## What works in v0.1.0
+## What works in v0.1.1
 
 - four native entities for the next predicted interval: photovoltaic power,
   consumption power, surplus power, and its UTC timestamp;

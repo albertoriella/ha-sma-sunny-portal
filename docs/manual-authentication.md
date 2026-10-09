@@ -5,6 +5,12 @@ an SMA-authorized OAuth client and redirect URI. These instructions apply only
 to Sunny Portal powered by ennexOS and can stop working if SMA changes its web
 application.
 
+This interim method is not authorized, endorsed, or supported by SMA. It uses
+undocumented web interfaces and may be restricted by SMA's applicable terms,
+policies, or technical controls. Use it only with an account and plant you are
+authorized to access. Stop using it if SMA requests this or if an officially
+supported authorization method becomes available.
+
 ## Before you begin
 
 You need:

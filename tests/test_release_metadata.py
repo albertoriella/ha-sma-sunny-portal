@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 MANIFEST_PATH = ROOT / "custom_components" / "sma_sunny_portal" / "manifest.json"
 HACS_PATH = ROOT / "hacs.json"
-RELEASE_VERSION = "0.1.0"
+RELEASE_VERSION = "0.1.1"
 MINIMUM_HOME_ASSISTANT = "2026.9.0"
 
 

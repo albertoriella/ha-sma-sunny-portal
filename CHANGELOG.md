@@ -3,6 +3,15 @@
 All notable changes to this project are documented in this file. The project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] - 2026-10-09
+
+### Changed
+
+- Clarified that the experimental manual authentication method is independent,
+  unsupported by SMA, and may be affected by SMA terms or technical controls.
+- Clarified the responsibility to use only an account and plant the user is
+  authorized to access.
+
 ## [0.1.0] - 2026-10-08
 
 ### Added
@@ -35,4 +44,5 @@ uses [Semantic Versioning](https://semver.org/).
   browser developer session.
 - Multi-plant selection within one SMA account is not implemented.
 
+[0.1.1]: https://github.com/albertoriella/ha-sma-sunny-portal/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/albertoriella/ha-sma-sunny-portal/releases/tag/v0.1.0
